@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,10 +235,12 @@ public class SpaceStatus {
 		obj.put("open", this.isOpen());
 		obj.put("lastchange", System.currentTimeMillis());
 		
-		JSONObject sensors = new JSONObject();
+		JSONArray sensors = new JSONArray();
+		JSONObject sensorsObject = new JSONObject();
 		JSONObject temp = new JSONObject();
 		temp.put("space", TEMP_FORMAT.format(this.temperature));
-		sensors.put("temp", temp);
+		sensorsObject.put("temp", temp);
+		sensors.add(sensorsObject);
 		obj.put("sensors", sensors);
 		return obj;
 	}
