@@ -402,13 +402,25 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			if (SpaceStatus.getInstance().isOpenAutomatically()) {
 				this.changeTopic((Boolean) status);
 				if ((Boolean) status) {
-					LOG.trace("spaceStatusChanged: opened, fading in");
-					dimmer.fadeIn(this.dmxChannel);
+					LOG.info("spaceStatusChanged: opened, fading in");
+					new Thread() {
+						@Override
+						public void run() {
+							dimmer.fadeIn(dmxChannel);
+						}
+					}.start();
+					LOG.info("spaceStatusChanged: opened, fading in started in separate thread");
 				} else {
-					LOG.trace("spaceStatusChanged: closed, fading out");
-					for (int i = 0; i < dimmerChannels.length; i++) {
-						dimmer.fadeOut(this.dimmerChannels[i], this.lightsOffDelay + 3 * i);
-					}
+					LOG.info("spaceStatusChanged: closed, fading out");
+					new Thread() {
+						@Override
+						public void run() {
+							for (int i = 0; i < dimmerChannels.length; i++) {
+								dimmer.fadeOut(dimmerChannels[i], lightsOffDelay + 3 * i);
+							}
+						}
+					}.start();
+					LOG.info("spaceStatusChanged: fading out started in separate thread");
 				}
 			}
 			break;

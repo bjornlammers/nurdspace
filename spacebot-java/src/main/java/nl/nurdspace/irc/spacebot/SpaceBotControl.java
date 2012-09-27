@@ -83,7 +83,7 @@ public class SpaceBotControl {
 			boolean quit = false;
 			do {
 				// monitor keyboard
-				System.out.println("SpaceOpen=" + SpaceStatus.getInstance().isOpen() + "; automatically: " + SpaceStatus.getInstance().isOpenAutomatically() + "\nReady...\ntype 'a' for Automatic (LDR)\n'o' to Open\n'd' or 'c' to Close\n'q' to Quit the channel\n'r' to reload properties");
+				System.out.println("SpaceOpen=" + SpaceStatus.getInstance().isOpen() + "; automatically: " + SpaceStatus.getInstance().isOpenAutomatically() + "\nReady...\ntype 'a' for Automatic (locks)\n'o' to Open\n'd' or 'c' to Close\n'q' to Quit the channel\n'r' to reload properties");
 				try {
 					InputStreamReader converter = new InputStreamReader(System.in);
 					BufferedReader in = new BufferedReader(converter);

@@ -28,8 +28,7 @@
 		</layout>
 	</appender>
 	
-	<logger name="nl.nurdspace.irc.spacebot" level="DEBUG" />
-	<logger name="nl.nurdspace.irc.spacebot.Dimmer" level="DEBUG" />
+	<logger name="nl.nurdspace.irc.spacebot" level="INFO" />
 
 	<root level="info">
 		<appender-ref ref="ROLLINGFILE" />
