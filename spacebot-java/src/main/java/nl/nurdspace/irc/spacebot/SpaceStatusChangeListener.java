@@ -15,6 +15,7 @@ public interface SpaceStatusChangeListener {
 	static final int EVENT_LIGHTS_ON_OFF = 6;
 	static final int EVENT_SPACE_OPEN_CLOSE = 7;
 	static final int EVENT_BACK_DOOR_LOCK = 8;
+	static final int EVENT_FRONT_DOOR_LOCK = 9;
 
 	/**
 	 * Called when the space status is changed.

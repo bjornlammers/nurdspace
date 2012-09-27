@@ -28,7 +28,7 @@
 		</layout>
 	</appender>
 	
-	<logger name="nl.nurdspace.irc.spacebot" level="INFO" />
+	<logger name="nl.nurdspace.irc.spacebot" level="DEBUG" />
 	<logger name="nl.nurdspace.irc.spacebot.Dimmer" level="DEBUG" />
 
 	<root level="info">

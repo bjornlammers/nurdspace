@@ -37,6 +37,8 @@ public class SpaceStatus {
 	private float temperature;
 	/** Lock of the back door. */
 	private boolean backDoorLocked;
+	/** Lock of the front door. */
+	private boolean frontDoorLocked;
 	
 	/** Whether space open/closed is set by the lights or by spacebot. */
 	private boolean openAutomatically;
@@ -75,11 +77,24 @@ public class SpaceStatus {
 		return backDoorLocked;
 	}
 	
+	public boolean isFrontDoorLocked() {
+		return frontDoorLocked;
+	}
+	
 	public void setBackDoorLocked(boolean backDoorLocked) {
 		if (this.backDoorLocked != backDoorLocked) {
 			notifyListeners(SpaceStatusChangeListener.EVENT_BACK_DOOR_LOCK, backDoorLocked);
 		}
 		this.backDoorLocked = backDoorLocked;
+		calculateOpen(this.backDoorLocked, this.frontDoorLocked);
+	}
+	
+	public void setFrontDoorLocked(boolean frontDoorLocked) {
+		if (this.frontDoorLocked != frontDoorLocked) {
+			notifyListeners(SpaceStatusChangeListener.EVENT_FRONT_DOOR_LOCK, frontDoorLocked);
+		}
+		this.frontDoorLocked = frontDoorLocked;
+		calculateOpen(this.backDoorLocked, this.frontDoorLocked);
 	}
 	
 	public int getFluorescentLighting() {
@@ -141,37 +156,29 @@ public class SpaceStatus {
 			this.fluorescentLightingOn = newLightsOn;
 			notifyListeners(SpaceStatusChangeListener.EVENT_LIGHTS_ON_OFF, newLightsOn);
 		}
-		calculateOpen(newLightsOn);
 	}
 	
 	/**
-	 * Calculate whether the space is open or closed. Only after five consecutive readings of
-	 * the same value is the status changed.
-	 * @param newLightsOn whether the lights were read as on or off
+	 * Calculate whether the space is open or closed. If a door is unlocked, the space is open.
+	 * @param backDoorLocked whether the back door is locked
+	 * @param frontDoorLocked whether the front door is locked
 	 */
-	private void calculateOpen(final boolean newLightsOn) {
-		LOG.trace("calculateOpen: " + newLightsOn);
-		if (newLightsOn) {
-			LOG.trace("calculateOpen: lights ON (off: " + lightsOffCounter + ", on: " + lightsOnCounter + ", open: " + isOpen() + ")");
-			this.lightsOffCounter = 0;
-			if (++this.lightsOnCounter > 4 && !isOpen()) {
-				if (openAutomatically) {
-					LOG.trace("calculateOpen: space was not open, is open now");
-					setOpen(true);
-				} else {
-					LOG.debug("calculateOpen: space open/closed is set to manual, ignoring lights on");
-				}
+	private void calculateOpen(final boolean backDoorLocked, final boolean frontDoorLocked) {
+		LOG.trace("calculateOpen: " + backDoorLocked + ", " + frontDoorLocked);
+		boolean open = !(backDoorLocked && frontDoorLocked);
+		if (open && !isOpen()) {
+			if (openAutomatically) {
+				LOG.trace("calculateOpen: space was not open, is open now");
+				setOpen(true);
+			} else {
+				LOG.debug("calculateOpen: space open/closed is set to manual, ignoring unlocking");
 			}
-		} else {
-			LOG.trace("calculateOpen: lights OFF (off: " + lightsOffCounter + ", on: " + lightsOnCounter + ", open: " + isOpen() + ")");
-			this.lightsOnCounter = 0;
-			if (++this.lightsOffCounter > 4 && isOpen()) {
-				if (openAutomatically) {
-					LOG.trace("calculateOpen: space was open, is closed now");
-					setOpen(false);
-				} else {
-					LOG.debug("calculateOpen: space open/closed is set to manual, ignoring lights off");
-				}
+		} else if (!open && isOpen()){
+			if (openAutomatically) {
+				LOG.trace("calculateOpen: space was open, is closed now");
+				setOpen(false);
+			} else {
+				LOG.debug("calculateOpen: space open/closed is set to manual, ignoring lights off");
 			}
 		}
 	}

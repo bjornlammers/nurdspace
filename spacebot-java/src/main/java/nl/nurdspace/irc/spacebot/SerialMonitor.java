@@ -143,8 +143,10 @@ public class SerialMonitor implements SerialPortEventListener {
 			SpaceStatus.getInstance().setFluorescentLighting(value);
 		} else if (message.startsWith("Temp:")) {
 			SpaceStatus.getInstance().setTemperature(Float.parseFloat(message.substring(6).trim()));
-		} else if (message.startsWith("Lock0 open:")) {
-			SpaceStatus.getInstance().setBackDoorLocked(Integer.parseInt(message.substring(12).trim()) == 0);
+		} else if (message.startsWith("Lock0: open:")) {
+			SpaceStatus.getInstance().setBackDoorLocked(Integer.parseInt(message.substring(13).trim()) == 0);
+		} else if (message.startsWith("Lock1: open:")) {
+			SpaceStatus.getInstance().setFrontDoorLocked(Integer.parseInt(message.substring(13).trim()) == 0);
 		}
 	}
 }

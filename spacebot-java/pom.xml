@@ -55,11 +55,11 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>1.6.4</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>net.stamfest</groupId>
 			<artifactId>java-rrd</artifactId>
 			<version>1.0.0</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

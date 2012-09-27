@@ -416,6 +416,10 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			LOG.trace("spaceStatusChanged: backDoorLocked=" + status);
 			this.channel.getBot().sendMessage(this.channel, "back door was " + (((Boolean) status).booleanValue() ? "locked" : "unlocked"));
 			break;
+		case SpaceStatusChangeListener.EVENT_FRONT_DOOR_LOCK:
+			LOG.trace("spaceStatusChanged: frontDoorLocked=" + status);
+			this.channel.getBot().sendMessage(this.channel, "front door was " + (((Boolean) status).booleanValue() ? "locked" : "unlocked"));
+			break;
 		}
 	}
 
