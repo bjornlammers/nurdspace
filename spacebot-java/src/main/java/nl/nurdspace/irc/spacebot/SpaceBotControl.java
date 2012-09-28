@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -29,6 +31,7 @@ public class SpaceBotControl {
 	private static final String SETTING_DIMMER_HOST = "dimmer.host";
 	private static final String SETTING_DIMMER_CHANNEL = "dimmer.channel";
 	private static final String SETTING_DIMMER_CHANNELS = "dimmer.channels";
+	private static final String SETTING_DIMMER_DEVICES = "dimmer.devices";
 	private static final String SETTING_FLASH_REPEATS = "flash.repeats";
 	private static final String SETTING_FLASH_TIME_ON = "flash.time.on";
 	private static final String SETTING_FLASH_TIME_OFF = "flash.time.off";
@@ -63,7 +66,7 @@ public class SpaceBotControl {
 			SerialMonitor serial = new SerialMonitor();
 			Dimmer dimmer = new Dimmer();
 			dimmer.setHost((String) settings.get(SETTING_DIMMER_HOST));
-			SpaceBot spaceBot = new SpaceBot(bot.getChannel((String) settings.get(SETTING_CHANNEL)), dimmer, (String) settings.get(SETTING_MPD_HOST), (Integer) settings.get(SETTING_DIMMER_CHANNEL), (Integer[]) settings.get(SETTING_DIMMER_CHANNELS));
+			SpaceBot spaceBot = new SpaceBot(bot.getChannel((String) settings.get(SETTING_CHANNEL)), dimmer, (String) settings.get(SETTING_MPD_HOST), (Integer) settings.get(SETTING_DIMMER_CHANNEL), (List<Integer>) settings.get(SETTING_DIMMER_CHANNELS), (List<DimmerDevice>) settings.get(SETTING_DIMMER_DEVICES));
 			SpaceStatus.getInstance().addListener(spaceBot);
 			TemperatureLogger tempLogger = new TemperatureLogger();
 			SpaceStatus.getInstance().addListener(tempLogger);
@@ -170,11 +173,28 @@ public class SpaceBotControl {
 				if (props.containsKey(SETTING_DIMMER_CHANNELS)) {
 					System.out.println("Setting " + SETTING_DIMMER_CHANNELS + " to " + props.getProperty(SETTING_DIMMER_CHANNELS));
 					String[] channels = props.getProperty(SETTING_DIMMER_CHANNELS).split(",");
-					Integer[] channelNumbers = new Integer[channels.length];
+					List<Integer> channelNumbers = new ArrayList<Integer>();
+					List<DimmerDevice> devices = new ArrayList<DimmerDevice>();
 					for (int i = 0; i < channels.length; i++) {
-						channelNumbers[i] = Integer.parseInt(channels[i].trim());
+						DimmerDevice device;
+						if (channels[i].startsWith("[")) {
+							// Device [r-channel,g-channel,b-channel]
+							String rgb = channels[i].trim().substring(1, channels[i].length() - 1);
+							LOG.info("RGB: " + rgb);
+							String[] rgbArray = rgb.split("\\|");
+							LOG.info("R: " + rgbArray[0].trim());
+							LOG.info("G: " + rgbArray[1].trim());
+							LOG.info("B: " + rgbArray[2].trim());
+							device = new RGBDevice(Integer.parseInt(rgbArray[0].trim()), Integer.parseInt(rgbArray[1].trim()), Integer.parseInt(rgbArray[2].trim()));
+						} else {
+							device = new SimpleDevice(Integer.parseInt(channels[i].trim()));
+						}
+						LOG.info("Dimmer device: " + device.toString());
+						channelNumbers.addAll(device.getChannels());
+						devices.add(device);
 					}
 					settings.put(SETTING_DIMMER_CHANNELS, channelNumbers);
+					settings.put(SETTING_DIMMER_DEVICES, devices);
 				}
 				if (props.containsKey(SETTING_DIMMER_CHANNEL)) {
 					System.out.println("Setting " + SETTING_DIMMER_CHANNEL + " to " + props.getProperty(SETTING_DIMMER_CHANNEL));

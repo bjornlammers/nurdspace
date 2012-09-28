@@ -4,6 +4,7 @@ import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -52,7 +53,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	private int flashTimeOff;
 	private int flashTimeOn;
 	private int lightsOffDelay;
-	private Integer[] dimmerChannels;
+	private List<Integer> dimmerChannels;
+	private List<DimmerDevice> dimmerDevices;
 
 	private static final Pattern REPLACE_COMMAND = Pattern
 			.compile("(^s|[ #!]s)/[^/]+/[^/]+/?"); // ^s/.+/.+|[
@@ -60,12 +62,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 
 	private List<Event> events = new ArrayList<Event>(100);
 
-	public SpaceBot(Channel channel, Dimmer dimmer, String mpdHost, int dimmerChannel, Integer[] dimmerChannels) {
-		this(channel, dimmer, mpdHost, false, false, dimmerChannel, dimmerChannels);
+	public SpaceBot(Channel channel, Dimmer dimmer, String mpdHost, int dimmerChannel, List<Integer> dimmerChannels, List<DimmerDevice> dimmerDevices) {
+		this(channel, dimmer, mpdHost, false, false, dimmerChannel, dimmerChannels, dimmerDevices);
 	}
 
 	public SpaceBot(Channel channel, Dimmer dimmer, String mpdHost, boolean automatic,
-			boolean open, int dimmerChannel, Integer[] dimmerChannels) {
+			boolean open, int dimmerChannel, List<Integer> dimmerChannels, List<DimmerDevice> dimmerDevices) {
 		SpaceStatus.getInstance().setOpenAutomatically(automatic);
 		SpaceStatus.getInstance().setOpen(open);
 		this.channel = channel;
@@ -73,6 +75,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		this.dmxChannel = dimmerChannel;
 		this.mpdHost = mpdHost;
 		this.dimmerChannels = dimmerChannels;
+		this.dimmerDevices = dimmerDevices;
 	}
 
 	public void setDimmerChannel(int dimmerChannel) {
@@ -193,6 +196,13 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.flash(event, parameters);
 		} else if ("fade".equalsIgnoreCase(command)) {
 			this.fade(event, parameters);
+		} else if ("devices".equalsIgnoreCase(command)) {
+			StringBuffer devices = new StringBuffer();
+			for (int i = 0; i < this.dimmerDevices.size(); i++) {
+				DimmerDevice device = dimmerDevices.get(i);
+				devices.append(i).append(": [").append(device).append("] ");
+			};
+			event.respond(devices.toString());
 		} else if ("lights".equalsIgnoreCase(command)) {
 			this.lights(event, parameters);
 		} else if ("status".equalsIgnoreCase(command)) {
@@ -262,15 +272,48 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void fade(MessageEvent event, String[] parameters) {
-		int channel;
-		if (parameters.length > 1) {
-			channel = Integer.parseInt(parameters[1]);
-			// TODO error check
-		} else {
-			channel = dmxChannel;
-		}
 		if (SpaceStatus.getInstance().isOpen()) {
-			dimmer.fade(channel, Integer.parseInt(parameters[0]));
+			// Drie formaten: fade <level>; fade <level> <kanaal>; fade <level> #<device>
+			// Later nog: fade <r,g,b> #<device>
+			switch (parameters.length) {
+			case 0:
+				event.respond("give me a level or RGB value (and optionally a channel/device)");
+				break;
+			case 1:
+				if (parameters[0].startsWith("#")) {
+					// RGB kan niet op default channel
+					event.respond("give me a device if you want to use rgb!");
+				} else {
+					dimmer.fade(dmxChannel, Integer.parseInt(parameters[0]));
+				}
+				break;
+			case 2:
+				if (parameters[0].startsWith("#")) {
+					if (parameters[1].startsWith("#")) {
+						// RGB op device
+						// Check of device rgb is
+					} else {
+						event.respond("give me a device, not a channel, if you want to use rgb!");
+					}
+				} else {
+					// "Gewoon" level
+					int level = Integer.parseInt(parameters[0]);
+					if ("all".equals(parameters[1])) {
+						for (int channel : dimmerChannels) {
+							dimmer.fade(channel, level);
+						}
+					} else if (parameters[1].startsWith("#")) {
+						int deviceNumber = Integer.parseInt(parameters[1].substring(1).trim());
+						DimmerDevice device = dimmerDevices.get(deviceNumber);
+						for (int channel : device.getChannels()) {
+							dimmer.fade(channel, level);
+						}
+					} else {
+						// Ouderwets: level op channel
+						dimmer.fade(Integer.parseInt(parameters[1]), level);
+					}
+				}
+			}
 		} else {
 			event.respond("nope, space is closed");
 		}
@@ -415,8 +458,9 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 					new Thread() {
 						@Override
 						public void run() {
-							for (int i = 0; i < dimmerChannels.length; i++) {
-								dimmer.fadeOut(dimmerChannels[i], lightsOffDelay + 3 * i);
+							int i = 0;
+							for (int channel : dimmerChannels) {
+								dimmer.fadeOut(channel, lightsOffDelay + 3 * i++);
 							}
 						}
 					}.start();
