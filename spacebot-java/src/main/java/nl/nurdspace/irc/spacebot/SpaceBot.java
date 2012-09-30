@@ -265,7 +265,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	
 	private void flash(MessageEvent event, String[] parameters) {
 		if (SpaceStatus.getInstance().isOpen()) {
-			dimmer.flash(this.dmxChannel, this.flashRepeats,
+			dimmer.flash(2 /* this.dmxChannel */, this.flashRepeats,
 					this.flashTimeOn, this.flashTimeOff);
 		} else {
 			event.respond("nope, space is closed");
@@ -303,8 +303,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 								String green = parameters[0].substring(3, 5);
 								String blue = parameters[0].substring(5);
 								dimmer.fade(device.getRed(), Integer.parseInt(red, 16));
-								dimmer.fade(device.getGreen(), Integer.parseInt(red, 16));
-								dimmer.fade(device.getBlue(), Integer.parseInt(red, 16));
+								dimmer.fade(device.getGreen(), Integer.parseInt(green, 16));
+								dimmer.fade(device.getBlue(), Integer.parseInt(blue, 16));
 							}
 						} else {
 							event.respond("give me an RGB device if you want to use rgb!");
