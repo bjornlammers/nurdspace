@@ -14,6 +14,18 @@ public class RGBDevice extends DimmerDevice {
 		this.groenChannel = groen;
 		this.blauwChannel = blauw;
 	}
+	
+	public int getRed() {
+		return this.roodChannel;
+	}
+
+	public int getGreen() {
+		return this.groenChannel;
+	}
+
+	public int getBlue() {
+		return this.blauwChannel;
+	}
 
 	public Collection<Integer> getChannels() {
 		List<Integer> channels = new ArrayList<Integer>(3);

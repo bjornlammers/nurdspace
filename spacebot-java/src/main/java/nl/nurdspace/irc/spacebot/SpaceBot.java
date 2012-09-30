@@ -202,7 +202,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 				DimmerDevice device = dimmerDevices.get(i);
 				devices.append(i).append(": [").append(device).append("] ");
 			};
-			event.respond(devices.toString());
+			event.getBot().sendMessage(event.getChannel(), devices.toString());
 		} else if ("lights".equalsIgnoreCase(command)) {
 			this.lights(event, parameters);
 		} else if ("status".equalsIgnoreCase(command)) {
@@ -227,6 +227,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void showLocks(MessageEvent event, String[] parameters) {
+		event.getBot().sendMessage(event.getChannel(), "Front door is " + (SpaceStatus.getInstance().isFrontDoorLocked() ? "locked" : "unlocked"));
 		event.getBot().sendMessage(event.getChannel(), "Back door is " + (SpaceStatus.getInstance().isBackDoorLocked() ? "locked" : "unlocked"));
 	}
 	
@@ -292,6 +293,22 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 					if (parameters[1].startsWith("#")) {
 						// RGB op device
 						// Check of device rgb is
+						int deviceNumber = Integer.parseInt(parameters[1].substring(1).trim());
+						if (dimmerDevices.get(deviceNumber) instanceof RGBDevice) {
+							RGBDevice device = (RGBDevice) dimmerDevices.get(deviceNumber);
+							if (parameters[0].length() != 7) {
+								event.respond("give me an RGB value in hex (rrggbb), like so: #FF0080");
+							} else {
+								String red = parameters[0].substring(1, 3);
+								String green = parameters[0].substring(3, 5);
+								String blue = parameters[0].substring(5);
+								dimmer.fade(device.getRed(), Integer.parseInt(red, 16));
+								dimmer.fade(device.getGreen(), Integer.parseInt(red, 16));
+								dimmer.fade(device.getBlue(), Integer.parseInt(red, 16));
+							}
+						} else {
+							event.respond("give me an RGB device if you want to use rgb!");
+						}
 					} else {
 						event.respond("give me a device, not a channel, if you want to use rgb!");
 					}
