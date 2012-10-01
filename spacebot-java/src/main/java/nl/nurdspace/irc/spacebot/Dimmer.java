@@ -7,6 +7,10 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -71,12 +75,12 @@ public class Dimmer {
 		fadeAbsolute(channel, 0);
 	}
 
-	public void flash(int channel) {
-		flash(channel, 15, 100, 100);
+	public void flash(List<DimmerDevice> devices) {
+		flash(devices, 15, 100, 100);
 	}
 
-	public void flash(int channel, int repeats, int timeOn, int timeOff) {
-		DimmerFlasher flasher = new DimmerFlasher(5, repeats, timeOn,
+	public void flash(List<DimmerDevice> devices, int repeats, int timeOn, int timeOff) {
+		DimmerFlasher flasher = new DimmerFlasher(devices, repeats, timeOn,
 				timeOff);
 		new Thread(flasher).start();
 	}
@@ -182,35 +186,53 @@ public class Dimmer {
 	};
 
 	private class DimmerFlasher implements Runnable {
-		private final int channel;
+		private final List<DimmerDevice> devices;
 		private final int repeats;
 		private final int timeOn;
 		private final int timeOff;
+		private final Map<Integer, Integer> currentLevels;
 
-		DimmerFlasher(int channel, int repeats, int timeOn, int timeOff) {
-			this.channel = channel;
+		DimmerFlasher(List<DimmerDevice> devices, int repeats, int timeOn, int timeOff) {
+			this.devices = devices;
 			this.repeats = repeats;
 			this.timeOn = timeOn;
 			this.timeOff = timeOff;
+			this.currentLevels = new HashMap<Integer, Integer>();
+			for (DimmerDevice dimmerDevice : devices) {
+				for (Integer channel : dimmerDevice.getChannels()) {
+					currentLevels.put(channel, getCurrentLevel(channel));
+					setDimmer(channel, 0);
+				}
+			}
 		}
 
 		public void run() {
-			int currentLevel = getCurrentLevel(channel);
+			int currentDevice = 0;
 			for (int i = 0; i < repeats; i++) {
-				setDimmer(channel, 255);
+				for (Integer channel : devices.get(currentDevice).getChannels()) {
+					setDimmer(channel, 255);
+				}
 				try {
 					Thread.sleep(timeOn);
 				} catch (InterruptedException ie) {
 					LOG.error("run: error while sleeping", ie);
 				}
-				setDimmer(channel, 0);
+				for (Integer channel : devices.get(currentDevice).getChannels()) {
+					setDimmer(channel, 0);
+				}
 				try {
 					Thread.sleep(timeOff);
 				} catch (InterruptedException ie) {
 					LOG.error("run: error while sleeping", ie);
 				}
+				currentDevice++;
+				if (currentDevice >= devices.size()) {
+					currentDevice = 0;
+				}
 			}
-			fadeAbsolute(channel, currentLevel);
+			for (Integer channel : currentLevels.keySet()) {
+				setDimmer(channel, currentLevels.get(channel));
+			}
 		}
 	};
 

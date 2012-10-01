@@ -265,7 +265,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	
 	private void flash(MessageEvent event, String[] parameters) {
 		if (SpaceStatus.getInstance().isOpen()) {
-			dimmer.flash(2 /* this.dmxChannel */, this.flashRepeats,
+			dimmer.flash(dimmerDevices, this.flashRepeats,
 					this.flashTimeOn, this.flashTimeOff);
 		} else {
 			event.respond("nope, space is closed");
