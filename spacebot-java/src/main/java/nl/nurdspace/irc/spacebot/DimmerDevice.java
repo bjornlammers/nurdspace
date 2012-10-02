@@ -1,7 +1,7 @@
 package nl.nurdspace.irc.spacebot;
 
-import java.util.Collection;
+import java.util.List;
 
 public abstract class DimmerDevice {
-	public abstract Collection<Integer> getChannels();
+	public abstract List<Integer> getChannels();
 }

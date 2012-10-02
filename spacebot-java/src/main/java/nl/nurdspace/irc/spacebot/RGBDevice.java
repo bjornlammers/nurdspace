@@ -1,7 +1,6 @@
 package nl.nurdspace.irc.spacebot;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class RGBDevice extends DimmerDevice {
@@ -27,7 +26,7 @@ public class RGBDevice extends DimmerDevice {
 		return this.blauwChannel;
 	}
 
-	public Collection<Integer> getChannels() {
+	public List<Integer> getChannels() {
 		List<Integer> channels = new ArrayList<Integer>(3);
 		channels.add(roodChannel);
 		channels.add(groenChannel);

@@ -4,7 +4,6 @@ import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -203,6 +202,23 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 				devices.append(i).append(": [").append(device).append("] ");
 			};
 			event.getBot().sendMessage(event.getChannel(), devices.toString());
+		} else if ("device".equalsIgnoreCase(command)) {
+			int deviceNumber = Integer.parseInt(parameters[0].substring(1));
+			DimmerDevice device = dimmerDevices.get(deviceNumber);
+			if (device instanceof SimpleDevice) {
+				StringBuffer buf = new StringBuffer("Device ").append(deviceNumber).append(": ");
+				buf.append("simple device (channel ").append(device.getChannels().get(0)).append("=").append(dimmer.getCurrentLevel(device.getChannels().get(0))).append(")");
+				event.getBot().sendMessage(event.getChannel(), buf.toString());
+			} else if (device instanceof RGBDevice) {
+				StringBuffer buf = new StringBuffer("Device ").append(deviceNumber).append(": ");
+				buf.append("RGB device (redchan ").append(device.getChannels().get(0)).append("=");
+				buf.append(dimmer.getCurrentLevel(device.getChannels().get(0))).append(", greenchan ").append(device.getChannels().get(1)).append("=");
+				buf.append(dimmer.getCurrentLevel(device.getChannels().get(1))).append(", bluechan ").append(device.getChannels().get(2)).append("=");
+				buf.append(dimmer.getCurrentLevel(device.getChannels().get(2))).append(")");
+				event.getBot().sendMessage(event.getChannel(), buf.toString());
+			} else {
+				event.getBot().sendMessage(event.getChannel(), "onbekend type device");
+			}
 		} else if ("lights".equalsIgnoreCase(command)) {
 			this.lights(event, parameters);
 		} else if ("status".equalsIgnoreCase(command)) {
@@ -302,9 +318,9 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 								String red = parameters[0].substring(1, 3);
 								String green = parameters[0].substring(3, 5);
 								String blue = parameters[0].substring(5);
-								dimmer.fade(device.getRed(), Integer.parseInt(red, 16));
-								dimmer.fade(device.getGreen(), Integer.parseInt(green, 16));
-								dimmer.fade(device.getBlue(), Integer.parseInt(blue, 16));
+								dimmer.fadeAbsolute(device.getRed(), Integer.parseInt(red, 16));
+								dimmer.fadeAbsolute(device.getGreen(), Integer.parseInt(green, 16));
+								dimmer.fadeAbsolute(device.getBlue(), Integer.parseInt(blue, 16));
 							}
 						} else {
 							event.respond("give me an RGB device if you want to use rgb!");

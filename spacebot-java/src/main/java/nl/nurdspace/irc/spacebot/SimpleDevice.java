@@ -1,7 +1,6 @@
 package nl.nurdspace.irc.spacebot;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class SimpleDevice extends DimmerDevice {
@@ -12,7 +11,7 @@ public class SimpleDevice extends DimmerDevice {
 	}
 
 	@Override
-	public Collection<Integer> getChannels() {
+	public List<Integer> getChannels() {
 		List<Integer> channels = new ArrayList<Integer>(1);
 		channels.add(channel);
 		return channels;

@@ -7,7 +7,6 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +44,6 @@ public class Dimmer {
 		} catch (UnknownHostException e) {
 			connected = false;
 			LOG.error("setHost: invalid host '" + host + "'", e);
-		} catch (IOException e) {
-			connected = false;
-			LOG.error("setHost: error", e);
 		}
 		return connected;
 	}
@@ -311,20 +307,20 @@ public class Dimmer {
 		return connected;
 	}
 
-	private void fadeAbsolute(int channel, int target) {
+	public void fadeAbsolute(int channel, int target) {
 		new Thread(new DimmerFader(channel, target)).start();
 	}
 	
-	private int getCurrentLevel(int channel) {
+	public int getCurrentLevel(int channel) {
 		return getCurrentLevel(channel, -1);
 	}
 
 	private int getCurrentLevel(int channel, int defaultValue) {
 		int currentLevel = defaultValue;
 		String channelHex = StringUtils.leftPad(channelAsHex(channel), 4);
-		LOG.debug("getCurrentLevel: channelHex=[" + channelHex + "]");
+		LOG.info("getCurrentLevel: channelHex=[" + channelHex + "]");
 		String reply = sendCommand("*CD01" + channelHex + "01#");
-		LOG.debug("getCurrentLevel: received=[" + reply + "]");
+		LOG.info("getCurrentLevel: received=[" + reply + "]");
 		try {
 			currentLevel = Integer.parseInt(reply.substring(1, 3), 16);
 		} catch (NumberFormatException e) {
@@ -335,7 +331,7 @@ public class Dimmer {
 		if (currentLevel == -1) {
 			currentLevel = getCurrentLevel(channel, 0);
 		}
-		LOG.debug("getCurrentLevel: current level=" + currentLevel);
+		LOG.info("getCurrentLevel: current level=" + currentLevel);
 		return currentLevel;
 	}
 
