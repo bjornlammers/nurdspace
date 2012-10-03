@@ -11,6 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import nl.nurdspace.irc.spacebot.dimmer.Dimmer;
+import nl.nurdspace.irc.spacebot.dimmer.DimmerDevice;
+import nl.nurdspace.irc.spacebot.dimmer.RGBDevice;
+import nl.nurdspace.irc.spacebot.dimmer.SimpleDevice;
+
 import org.pircbotx.PircBotX;
 import org.pircbotx.exception.IrcException;
 import org.pircbotx.exception.NickAlreadyInUseException;

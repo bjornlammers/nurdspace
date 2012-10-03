@@ -9,6 +9,11 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import nl.nurdspace.irc.spacebot.dimmer.Dimmer;
+import nl.nurdspace.irc.spacebot.dimmer.DimmerDevice;
+import nl.nurdspace.irc.spacebot.dimmer.RGBDevice;
+import nl.nurdspace.irc.spacebot.dimmer.SimpleDevice;
+
 import org.bff.javampd.MPD;
 import org.bff.javampd.MPDPlayer;
 import org.bff.javampd.exception.MPDConnectionException;
@@ -159,7 +164,11 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		String message = event.getMessage();
 		if (message.startsWith("!")) {
 			// Command
-			handleCommand(event);
+			try {
+				handleCommand(event);
+			} catch (RuntimeException e) {
+				LOG.error("Exception in command", e);
+			}
 		} else {
 			if (isReplaceCommand(message)) {
 				replace(event);

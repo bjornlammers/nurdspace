@@ -1,4 +1,4 @@
-package nl.nurdspace.irc.spacebot;
+package nl.nurdspace.irc.spacebot.dimmer;
 
 import java.util.ArrayList;
 import java.util.List;

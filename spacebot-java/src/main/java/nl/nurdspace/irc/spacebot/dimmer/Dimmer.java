@@ -1,4 +1,4 @@
-package nl.nurdspace.irc.spacebot;
+package nl.nurdspace.irc.spacebot.dimmer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,9 +7,9 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -25,6 +25,12 @@ public class Dimmer {
 
 	/** Logger. */
 	private static final Logger LOG = LoggerFactory.getLogger(Dimmer.class);
+	
+	// TODO implement actual queueing of commands and an executor thread
+	// TODO how to start/stop executor thread?
+	
+	private final BlockingQueue<DimmerCommand> commands;
+	
 	/** The IP (or hostname) of the dimmer. */
 	private String host;
 
@@ -33,6 +39,10 @@ public class Dimmer {
 	private PrintWriter out;
 	private BufferedReader in;
 
+	public Dimmer() {
+		this.commands = new LinkedBlockingQueue<DimmerCommand>();
+	}
+	
 	public boolean setHost(String host) {
 		if (connected) {
 			disconnect();
@@ -76,12 +86,12 @@ public class Dimmer {
 	}
 
 	public void flash(List<DimmerDevice> devices, int repeats, int timeOn, int timeOff) {
-		DimmerFlasher flasher = new DimmerFlasher(devices, repeats, timeOn,
+		FlashCommand flasher = new FlashCommand(this, devices, repeats, timeOn,
 				timeOff);
 		new Thread(flasher).start();
 	}
 
-	private void setDimmer(int channel, int value) {
+	void setDimmer(int channel, int value) {
 		// Limit lower value to 5
 		int valueToSet;
 		if (value < 2) {
@@ -140,97 +150,6 @@ public class Dimmer {
 		}
 		return reply;
 	}
-
-	private class DimmerFader implements Runnable {
-		private final int target;
-		private final int channel;
-
-		public DimmerFader(int channel, int target) {
-			this.channel = channel;
-			if (target < 0) {
-				this.target = 0;
-			} else if (target > 255) {
-				this.target = 255;
-			} else {
-				this.target = target;
-			}
-		}
-
-		public void run() {
-			int currentLevel = getCurrentLevel(channel);
-			if (currentLevel < target) {
-				for (int i = currentLevel; i <= target; i++) {
-					setDimmer(channel, i);
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException ie) {
-						LOG.error("run: error while sleeping", ie);
-					}
-				}
-			} else if (currentLevel > target) {
-				for (int i = currentLevel; i >= target; i--) {
-					setDimmer(channel, i);
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException ie) {
-						LOG.error("run: error while sleeping", ie);
-					}
-				}
-			}
-		}
-
-	};
-
-	private class DimmerFlasher implements Runnable {
-		private final List<DimmerDevice> devices;
-		private final int repeats;
-		private final int timeOn;
-		private final int timeOff;
-		private final Map<Integer, Integer> currentLevels;
-
-		DimmerFlasher(List<DimmerDevice> devices, int repeats, int timeOn, int timeOff) {
-			this.devices = devices;
-			this.repeats = repeats;
-			this.timeOn = timeOn;
-			this.timeOff = timeOff;
-			this.currentLevels = new HashMap<Integer, Integer>();
-			for (DimmerDevice dimmerDevice : devices) {
-				for (Integer channel : dimmerDevice.getChannels()) {
-					currentLevels.put(channel, getCurrentLevel(channel));
-					setDimmer(channel, 0);
-				}
-			}
-		}
-
-		public void run() {
-			int currentDevice = 0;
-			for (int i = 0; i < repeats; i++) {
-				for (Integer channel : devices.get(currentDevice).getChannels()) {
-					setDimmer(channel, 255);
-				}
-				try {
-					Thread.sleep(timeOn);
-				} catch (InterruptedException ie) {
-					LOG.error("run: error while sleeping", ie);
-				}
-				for (Integer channel : devices.get(currentDevice).getChannels()) {
-					setDimmer(channel, 0);
-				}
-				try {
-					Thread.sleep(timeOff);
-				} catch (InterruptedException ie) {
-					LOG.error("run: error while sleeping", ie);
-				}
-				currentDevice++;
-				if (currentDevice >= devices.size()) {
-					currentDevice = 0;
-				}
-			}
-			for (Integer channel : currentLevels.keySet()) {
-				setDimmer(channel, currentLevels.get(channel));
-			}
-		}
-	};
 
 	private synchronized void disconnect() {
 		if (in != null) {
@@ -308,7 +227,7 @@ public class Dimmer {
 	}
 
 	public void fadeAbsolute(int channel, int target) {
-		new Thread(new DimmerFader(channel, target)).start();
+		new Thread(new FadeCommand(this, channel, target)).start();
 	}
 	
 	public int getCurrentLevel(int channel) {
