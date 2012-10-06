@@ -420,11 +420,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPDSong song = mpdPlayer.getCurrentSong();
 			StringBuilder songInfo = new StringBuilder();
 			songInfo.append(song.getTitle()).append(" van ").append(song.getArtist());
-			int random = new Random(System.currentTimeMillis()).nextInt() % KUTMUZIEKBERICHTEN.length;
-			String message = String.format(KUTMUZIEKBERICHTEN[random], songInfo);
-			event.getBot().sendMessage(event.getChannel(), message);
+			int random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
 			mpdPlayer.playNext();
 			mpd.close();
+			LOG.info("kutmuziek random = " + random);
+			String message = String.format(KUTMUZIEKBERICHTEN[random], songInfo);
+			event.getBot().sendMessage(event.getChannel(), message);
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't skip the song");
 			LOG.error("skipTrack: Error skipping", e);
@@ -445,8 +446,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			MPDSong song = mpdPlayer.getCurrentSong();
 			StringBuilder songInfo = new StringBuilder("np: ");
-			songInfo.append(song.getArtist()).append(" - ")
-					.append(song.getTitle());
+			if (song.getArtist() == null) {
+				songInfo.append(song.getFile());
+			} else {
+				songInfo.append(song.getArtist()).append(" - ")
+						.append(song.getTitle());
+			}
 			songInfo.append(" [").append(song.getLength() / 60).append(":");
 			songInfo.append(SECONDS_FORMAT.format(song.getLength() % 60))
 					.append("]");
