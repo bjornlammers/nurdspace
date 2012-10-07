@@ -417,14 +417,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			MPDSong song = mpdPlayer.getCurrentSong();
-			StringBuilder songInfo = new StringBuilder();
-			songInfo.append(song.getTitle()).append(" van ").append(song.getArtist());
+			String song = getSongInfo(mpdPlayer, " van ", false);
 			int random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
 			mpdPlayer.playNext();
 			mpd.close();
 			LOG.debug("kutmuziek random = " + random);
-			String message = String.format(KUTMUZIEKBERICHTEN[random], songInfo);
+			String message = String.format(KUTMUZIEKBERICHTEN[random], song);
 			event.getBot().sendMessage(event.getChannel(), message);
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't skip the song");
@@ -444,20 +442,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			MPDSong song = mpdPlayer.getCurrentSong();
-			StringBuilder songInfo = new StringBuilder("np: ");
-			if (song.getArtist() == null) {
-				songInfo.append(song.getFile()).append(" - ")
-						.append(song.getTitle());
-			} else {
-				songInfo.append(song.getArtist()).append(" - ")
-						.append(song.getTitle());
-				int time = song.getLength();
-				songInfo.append(" [").append(time / 60).append(":");
-				songInfo.append(SECONDS_FORMAT.format(time % 60))
-						.append("]");
-			}
-			event.getBot().sendMessage(event.getChannel(), songInfo.toString());
+			String song = getSongInfo(mpdPlayer, " - ", true);
+			event.getBot().sendMessage(event.getChannel(), "np: " + song);
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
@@ -471,6 +457,25 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			event.respond("sorry, couldn't find the MPD host");
 			LOG.error("showSong: Error connecting", e);
 		}
+	}
+	
+	private String getSongInfo(MPDPlayer mpdPlayer, String separator, final boolean appendLength) throws MPDPlayerException, MPDConnectionException {
+		MPDSong song = mpdPlayer.getCurrentSong();
+		StringBuilder songInfo = new StringBuilder("np: ");
+		if (song.getArtist() == null) {
+			songInfo.append(song.getFile()).append(separator)
+					.append(song.getTitle());
+		} else {
+			songInfo.append(song.getArtist()).append(separator)
+					.append(song.getTitle());
+			if (appendLength) {
+				int time = song.getLength();
+				songInfo.append(" [").append(time / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(time % 60))
+						.append("]");
+			}
+		}
+		return songInfo.toString();
 	}
 
 	private String combine(String glue, String... values) {
