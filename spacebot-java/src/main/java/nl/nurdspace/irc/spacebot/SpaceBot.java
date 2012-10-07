@@ -423,7 +423,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			int random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
 			mpdPlayer.playNext();
 			mpd.close();
-			LOG.info("kutmuziek random = " + random);
+			LOG.debug("kutmuziek random = " + random);
 			String message = String.format(KUTMUZIEKBERICHTEN[random], songInfo);
 			event.getBot().sendMessage(event.getChannel(), message);
 		} catch (MPDPlayerException e) {
@@ -447,27 +447,29 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPDSong song = mpdPlayer.getCurrentSong();
 			StringBuilder songInfo = new StringBuilder("np: ");
 			if (song.getArtist() == null) {
-				songInfo.append(song.getFile());
+				songInfo.append(song.getFile()).append(" - ")
+						.append(song.getTitle());
 			} else {
 				songInfo.append(song.getArtist()).append(" - ")
 						.append(song.getTitle());
+				int time = song.getLength();
+				songInfo.append(" [").append(time / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(time % 60))
+						.append("]");
 			}
-			songInfo.append(" [").append(song.getLength() / 60).append(":");
-			songInfo.append(SECONDS_FORMAT.format(song.getLength() % 60))
-					.append("]");
 			event.getBot().sendMessage(event.getChannel(), songInfo.toString());
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
-			LOG.error("skipTrack: Error reading current song", e);
+			LOG.error("showSong: Error reading current song", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("showSong: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("showSong: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("showSong: Error connecting", e);
 		}
 	}
 
