@@ -195,7 +195,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		String commandString = message.substring(1);
 		String[] commandArray = commandString.split(" ");
 		String command = commandArray[0];
-		String[] parameters = null;
+		String[] parameters = new String[] {};
 		if (commandArray.length > 1) {
 			parameters = new String[commandArray.length - 1];
 			System.arraycopy(commandArray, 1, parameters, 0, parameters.length);
@@ -239,7 +239,19 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		} else if ("beledig".equalsIgnoreCase(command)) {
 			this.beledig(event, parameters);
 		} else if ("kutmuziek".equalsIgnoreCase(command)) {
-			this.skipTrack(event, parameters);
+			this.skipTrack(event, parameters, true);
+		} else if ("next".equalsIgnoreCase(command)) {
+			this.skipTrack(event, parameters, false);
+		} else if ("volume".equalsIgnoreCase(command)) {
+			this.volume(event, parameters);
+		} else if ("louder".equalsIgnoreCase(command) || "harder".equalsIgnoreCase(command)) {
+			this.harder(event, parameters);
+		} else if ("quieter".equalsIgnoreCase(command) || "zachter".equalsIgnoreCase(command)) {
+			this.zachter(event, parameters);
+		} else if ("pause".equalsIgnoreCase(command)) {
+			this.mpdPause(event, parameters);
+		} else if ("play".equalsIgnoreCase(command)) {
+			this.mpdPlay(event, parameters);
 		} else if ("np".equalsIgnoreCase(command)) {
 			this.showSong(event, parameters);
 		} else if ("element".equalsIgnoreCase(command)) {
@@ -413,17 +425,147 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		event.getBot().sendMessage(event.getChannel(), brul);
 	}
 
-	private void skipTrack(MessageEvent event, String[] parameters) {
+	private void skipTrack(MessageEvent event, String[] parameters, boolean kutmuziek) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			String song = getSongInfo(mpdPlayer, " van ", false);
-			int random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
+			int random = 0;
+			String song = null;
+			if (kutmuziek) {
+				song = getSongInfo(mpdPlayer, " van ", false);
+				random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
+			}
 			mpdPlayer.playNext();
 			mpd.close();
-			LOG.debug("kutmuziek random = " + random);
-			String message = String.format(KUTMUZIEKBERICHTEN[random], song);
-			event.getBot().sendMessage(event.getChannel(), message);
+			if (kutmuziek) {
+				LOG.debug("kutmuziek random = " + random);
+				String message = String.format(KUTMUZIEKBERICHTEN[random], song);
+				event.getBot().sendMessage(event.getChannel(), message);
+			}
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't skip the song");
+			LOG.error("skipTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void zachter(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			int hoeveel = 10;
+			if (parameters.length == 1) {
+				hoeveel = Integer.parseInt(parameters[0]);
+			}
+			int huidig = mpdPlayer.getVolume();
+			int nieuw = huidig - hoeveel;
+			if (nieuw < 0) {
+				nieuw = 0;
+			}
+			mpdPlayer.setVolume(nieuw);
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't skip the song");
+			LOG.error("skipTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void harder(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			int hoeveel = 10;
+			if (parameters.length == 1) {
+				hoeveel = Integer.parseInt(parameters[0]);
+			}
+			int huidig = mpdPlayer.getVolume();
+			int nieuw = huidig + hoeveel;
+			if (nieuw > 100) {
+				nieuw = 100;
+			}
+			mpdPlayer.setVolume(nieuw);
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't skip the song");
+			LOG.error("skipTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void volume(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			if (parameters.length == 1) {
+				int volume = Integer.parseInt(parameters[0]);
+				if (volume > 100) {
+					volume = 100;
+				} else if (volume < 0) {
+					volume = 0;
+				}
+				mpdPlayer.setVolume(volume);
+			} else {
+				int volume = mpdPlayer.getVolume();
+				event.getBot().sendMessage(event.getChannel(), "volume: " + volume);
+			}
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't skip the song");
+			LOG.error("skipTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void mpdPause(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			mpdPlayer.pause();
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't skip the song");
+			LOG.error("skipTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("skipTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void mpdPlay(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			mpdPlayer.play();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't skip the song");
 			LOG.error("skipTrack: Error skipping", e);
@@ -461,7 +603,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	
 	private String getSongInfo(MPDPlayer mpdPlayer, String separator, final boolean appendLength) throws MPDPlayerException, MPDConnectionException {
 		MPDSong song = mpdPlayer.getCurrentSong();
-		StringBuilder songInfo = new StringBuilder("np: ");
+		StringBuilder songInfo = new StringBuilder();
 		if (song.getArtist() == null) {
 			songInfo.append(song.getFile()).append(separator)
 					.append(song.getTitle());
