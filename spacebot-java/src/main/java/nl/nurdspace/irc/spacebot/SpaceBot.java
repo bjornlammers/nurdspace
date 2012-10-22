@@ -499,16 +499,49 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			if (SpaceStatus.getInstance().isOpenAutomatically()) {
 				this.changeTopic((Boolean) status);
 				if ((Boolean) status) {
-					LOG.info("spaceStatusChanged: opened, fading in");
+					LOG.info("spaceStatusChanged: opened");
+					LOG.info("spaceStatusChanged: start mpd");
+					try {
+						MPD mpd = new MPD(this.mpdHost, 6600);
+						MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+						mpdPlayer.play();
+						mpd.close();
+					} catch (MPDPlayerException e) {
+						LOG.error("spaceStatusChanged: Error starting music", e);
+					} catch (MPDConnectionException e) {
+						LOG.error("spaceStatusChanged: Error starting music", e);
+					} catch (MPDResponseException e) {
+						LOG.error("spaceStatusChanged: Error starting music", e);
+					} catch (UnknownHostException e) {
+						LOG.error("spaceStatusChanged: Error starting music", e);
+					}
+					LOG.info("spaceStatusChanged: lights on");
 					new Thread() {
 						@Override
 						public void run() {
 							dimmer.fadeIn(dmxChannel);
 						}
 					}.start();
+					
 					LOG.info("spaceStatusChanged: opened, fading in started in separate thread");
 				} else {
-					LOG.info("spaceStatusChanged: closed, fading out");
+					LOG.info("spaceStatusChanged: closed");
+					LOG.info("spaceStatusChanged: stop mpd");
+					try {
+						MPD mpd = new MPD(this.mpdHost, 6600);
+						MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+						mpdPlayer.stop();
+						mpd.close();
+					} catch (MPDPlayerException e) {
+						LOG.error("spaceStatusChanged: Error stopping music", e);
+					} catch (MPDConnectionException e) {
+						LOG.error("spaceStatusChanged: Error stopping music", e);
+					} catch (MPDResponseException e) {
+						LOG.error("spaceStatusChanged: Error stopping music", e);
+					} catch (UnknownHostException e) {
+						LOG.error("spaceStatusChanged: Error stopping music", e);
+					}
+					LOG.info("spaceStatusChanged: lights off");
 					new Thread() {
 						@Override
 						public void run() {
