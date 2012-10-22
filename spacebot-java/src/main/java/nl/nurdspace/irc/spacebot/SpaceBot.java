@@ -248,6 +248,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.showLocks(event, parameters);
 		} else if ("open".equalsIgnoreCase(command) || "state".equalsIgnoreCase(command)) {
 			this.showOpen(event, parameters);
+		} else if ("fixtopic".equalsIgnoreCase(command)) {
+			if (channel.isOp(event.getBot().getUserBot())) {
+				this.changeTopic(SpaceStatus.getInstance().isOpen());
+			} else {
+				event.respond("Can't, I'm not an op! /op me!");
+			}
 		}
 	}
 
@@ -372,11 +378,23 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 								+ (SpaceStatus.getInstance()
 										.isFluorescentLightOn() ? "ON" : "OFF")
 								+ ")");
-		event.getBot().sendMessage(
-				event.getChannel(),
-				"Dimmed light is at level "
-						+ SpaceStatus.getInstance().getDimmedLightLevel()
-						+ "/255");
+		StringBuilder dimmedLights = new StringBuilder("Dimmer devices: ");
+		int deviceNr = 0;
+		for (DimmerDevice device : dimmerDevices) {
+			dimmedLights.append(deviceNr++).append("=");
+			if (device instanceof RGBDevice) {
+				RGBDevice rgbDevice = (RGBDevice) device;
+				dimmedLights.append("[").append(dimmer.getCurrentLevel((rgbDevice).getRed()));
+				dimmedLights.append(",").append(dimmer.getCurrentLevel((rgbDevice).getGreen()));
+				dimmedLights.append(",").append(dimmer.getCurrentLevel((rgbDevice).getBlue())).append("]");
+			} else {
+				dimmedLights.append(dimmer.getCurrentLevel(device.getChannels().iterator().next()));
+			}
+			if (deviceNr < dimmerDevices.size()) {
+				dimmedLights.append(",");
+			}
+		}
+		event.getBot().sendMessage(event.getChannel(), dimmedLights.toString());
 	}
 
 	private void temp(MessageEvent event, String[] parameters) {
