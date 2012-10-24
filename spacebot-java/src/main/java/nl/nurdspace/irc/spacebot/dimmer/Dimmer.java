@@ -8,8 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -29,7 +28,7 @@ public class Dimmer {
 	// TODO implement actual queueing of commands and an executor thread
 	// TODO how to start/stop executor thread?
 	
-	private final BlockingQueue<DimmerCommand> commands;
+	private final LinkedBlockingDeque<DimmerCommand> commands;
 	
 	/** The IP (or hostname) of the dimmer. */
 	private String host;
@@ -38,9 +37,12 @@ public class Dimmer {
 	private Socket requestSocket;
 	private PrintWriter out;
 	private BufferedReader in;
+	private Thread processor;
 
 	public Dimmer() {
-		this.commands = new LinkedBlockingQueue<DimmerCommand>();
+		this.commands = new LinkedBlockingDeque<DimmerCommand>();
+		processor = new Thread(new DimmerCommandProcessor(commands));
+		processor.start();
 	}
 	
 	public boolean setHost(String host) {
@@ -88,7 +90,7 @@ public class Dimmer {
 	public void flash(List<DimmerDevice> devices, int repeats, int timeOn, int timeOff) {
 		FlashCommand flasher = new FlashCommand(this, devices, repeats, timeOn,
 				timeOff);
-		new Thread(flasher).start();
+		commands.addFirst(flasher);
 	}
 
 	void setDimmer(int channel, int value) {
@@ -227,7 +229,7 @@ public class Dimmer {
 	}
 
 	public void fadeAbsolute(int channel, int target) {
-		new Thread(new FadeCommand(this, channel, target)).start();
+		commands.add(new FadeCommand(this, channel, target));
 	}
 	
 	public int getCurrentLevel(int channel) {

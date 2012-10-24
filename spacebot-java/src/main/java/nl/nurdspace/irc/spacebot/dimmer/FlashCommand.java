@@ -33,6 +33,10 @@ public class FlashCommand implements DimmerCommand, Runnable {
 	}
 
 	public void run() {
+		executeCommand();
+	}
+
+	public void executeCommand() {
 		int currentDevice = 0;
 		for (int i = 0; i < repeats; i++) {
 			for (Integer channel : devices.get(currentDevice).getChannels()) {

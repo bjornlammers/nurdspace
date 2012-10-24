@@ -23,12 +23,16 @@ public class FadeCommand implements DimmerCommand, Runnable {
 	}
 
 	public void run() {
+		executeCommand();
+	}
+	
+	public void executeCommand() {
 		int currentLevel = dimmer.getCurrentLevel(channel);
 		if (currentLevel < target) {
 			for (int i = currentLevel; i <= target; i++) {
 				dimmer.setDimmer(channel, i);
 				try {
-					Thread.sleep(10);
+					Thread.sleep(4);
 				} catch (InterruptedException ie) {
 					LOG.error("run: error while sleeping", ie);
 				}
@@ -37,7 +41,7 @@ public class FadeCommand implements DimmerCommand, Runnable {
 			for (int i = currentLevel; i >= target; i--) {
 				dimmer.setDimmer(channel, i);
 				try {
-					Thread.sleep(10);
+					Thread.sleep(4);
 				} catch (InterruptedException ie) {
 					LOG.error("run: error while sleeping", ie);
 				}
