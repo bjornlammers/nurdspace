@@ -68,13 +68,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	private List<Event> events = new ArrayList<Event>(100);
 
 	public SpaceBot(Channel channel, Dimmer dimmer, String mpdHost, int dimmerChannel, List<Integer> dimmerChannels, List<DimmerDevice> dimmerDevices) {
-		this(channel, dimmer, mpdHost, false, false, dimmerChannel, dimmerChannels, dimmerDevices);
+		this(channel, dimmer, mpdHost, true, dimmerChannel, dimmerChannels, dimmerDevices);
 	}
 
 	public SpaceBot(Channel channel, Dimmer dimmer, String mpdHost, boolean automatic,
-			boolean open, int dimmerChannel, List<Integer> dimmerChannels, List<DimmerDevice> dimmerDevices) {
+			int dimmerChannel, List<Integer> dimmerChannels, List<DimmerDevice> dimmerDevices) {
 		SpaceStatus.getInstance().setOpenAutomatically(automatic);
-		SpaceStatus.getInstance().setOpen(open);
 		this.channel = channel;
 		this.dimmer = dimmer;
 		this.dmxChannel = dimmerChannel;
@@ -271,8 +270,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void showLocks(MessageEvent event, String[] parameters) {
-		event.getBot().sendMessage(event.getChannel(), "Front door is " + (SpaceStatus.getInstance().isFrontDoorLocked() ? "locked" : "unlocked"));
-		event.getBot().sendMessage(event.getChannel(), "Back door is " + (SpaceStatus.getInstance().isBackDoorLocked() ? "locked" : "unlocked"));
+		event.getBot().sendMessage(event.getChannel(), "Front door is " + (SpaceStatus.getInstance().isFrontDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isFrontDoorLocked() ? "locked" : "unlocked")));
+		event.getBot().sendMessage(event.getChannel(), "Back door is " + (SpaceStatus.getInstance().isBackDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isBackDoorLocked() ? "locked" : "unlocked")));
 	}
 	
 	private void showElement(MessageEvent event, String[] parameters) {
@@ -381,16 +380,20 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void lights(MessageEvent event, String[] parameters) {
+		Integer fluorescents = SpaceStatus.getInstance().getFluorescentLighting();
+		String fluorescentsMessage = "unknown";
+		if (fluorescents != null) {
+			Boolean fluorescentsOnOff = SpaceStatus.getInstance().isFluorescentLightOn();
+			fluorescentsMessage = fluorescents + "/1023";
+			if (fluorescentsOnOff != null) {
+				fluorescentsMessage += " (" + (fluorescentsOnOff ? "ON" : "OFF") + ")";
+			}
+		}
 		event.getBot()
 				.sendMessage(
 						event.getChannel(),
 						"Fluorescent lighting "
-								+ SpaceStatus.getInstance()
-										.getFluorescentLighting()
-								+ "/1023 ("
-								+ (SpaceStatus.getInstance()
-										.isFluorescentLightOn() ? "ON" : "OFF")
-								+ ")");
+								+ fluorescentsMessage);
 		StringBuilder dimmedLights = new StringBuilder("Dimmer devices: ");
 		int deviceNr = 0;
 		for (DimmerDevice device : dimmerDevices) {
@@ -419,19 +422,21 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void status(MessageEvent event, String[] parameters) {
-		event.getBot()
-				.sendMessage(
-						event.getChannel(),
-						getSpaceOpenMessage() + 
-						"; fluorescent lights: "
-								+ (SpaceStatus.getInstance()
-										.isFluorescentLightOn() ? "ON" : "OFF")
-								+ "; dimmed lights: "
-								+ SpaceStatus.getInstance()
-										.getDimmedLightLevel()
-								+ "; "
-								+ TEMP_FORMAT.format(SpaceStatus.getInstance()
-										.getTemperature()) + " C");
+		Boolean fluorescents = SpaceStatus.getInstance().isFluorescentLightOn();
+		String fluorescentsMessage = "fluorescent lights: ";
+		if (fluorescents == null) {
+			fluorescentsMessage += "unknown";
+		} else {
+			fluorescentsMessage += fluorescents ? "ON" : "OFF";
+		}
+		Float temperature = SpaceStatus.getInstance().getTemperature();
+		String tempMessage = "unknown";
+		if (temperature != null) {
+			tempMessage = TEMP_FORMAT.format(temperature) + " C";
+		}
+		event.getBot().sendMessage(
+				event.getChannel(),
+				getSpaceOpenMessage() + "; " + fluorescentsMessage + "; " + tempMessage);
 	}
 
 	private void beledig(MessageEvent event, String[] parameters) {
