@@ -48,7 +48,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			"Van %s ga ik spontaan aan de spuitpoep",
 			"%s is voor lutsers",
 			"%s schaadt de gezondheid. Het kan longkanker en hartklachten veroorzaken.",
-			"Kut.mu.ziek de; v 1. %s"};
+			"Kut.mu.ziek de; v 1. %s",
+			"Volgens surrounder is %s nog erger dan Windows 3.1"};
 	private final Channel channel;
 	private final Dimmer dimmer;
 	private final String mpdHost;
@@ -448,16 +449,25 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			int random = 0;
-			String song = null;
+			StringBuilder songInfoString = null;
 			if (kutmuziek) {
-				song = getSongInfo(mpdPlayer, " van ", false);
+				MPDSong song = mpdPlayer.getCurrentSong();
+				songInfoString = new StringBuilder();
+				if (song.getArtist() == null) {
+					songInfoString.append(song.getTitle()).append(" van ")
+							.append(song.getFile());
+				} else {
+					songInfoString.append(song.getTitle()).append(" van ")
+							.append(song.getArtist());
+				}
+				
 				random = new Random(System.currentTimeMillis()).nextInt(KUTMUZIEKBERICHTEN.length);
 			}
 			mpdPlayer.playNext();
 			mpd.close();
 			if (kutmuziek) {
 				LOG.debug("kutmuziek random = " + random);
-				String message = String.format(KUTMUZIEKBERICHTEN[random], song);
+				String message = String.format(KUTMUZIEKBERICHTEN[random], songInfoString.toString());
 				event.getBot().sendMessage(event.getChannel(), message);
 			}
 		} catch (MPDPlayerException e) {
@@ -489,16 +499,16 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			}
 			mpdPlayer.setVolume(nieuw);
 		} catch (MPDPlayerException e) {
-			event.respond("sorry, couldn't skip the song");
-			LOG.error("skipTrack: Error skipping", e);
+			event.respond("sorry, couldn't lower volume");
+			LOG.error("zachter: Error skipping", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("zachter: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("zachter: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("zachter: Error connecting", e);
 		}
 	}
 
@@ -518,15 +528,15 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			mpdPlayer.setVolume(nieuw);
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't skip the song");
-			LOG.error("skipTrack: Error skipping", e);
+			LOG.error("harder: Error lowering volume", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("harder: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("harder: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("harder: Error connecting", e);
 		}
 	}
 
@@ -547,16 +557,16 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 				event.getBot().sendMessage(event.getChannel(), "volume: " + volume);
 			}
 		} catch (MPDPlayerException e) {
-			event.respond("sorry, couldn't skip the song");
-			LOG.error("skipTrack: Error skipping", e);
+			event.respond("sorry, couldn't read or change volume");
+			LOG.error("volume: Error setting or reading volume", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("volume: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("volume: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("volume: Error connecting", e);
 		}
 	}
 
@@ -566,16 +576,16 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			mpdPlayer.pause();
 		} catch (MPDPlayerException e) {
-			event.respond("sorry, couldn't skip the song");
-			LOG.error("skipTrack: Error skipping", e);
+			event.respond("sorry, couldn't pause");
+			LOG.error("mpdPause: Error skipping", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPause: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPause: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPause: Error connecting", e);
 		}
 	}
 
@@ -585,16 +595,16 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			mpdPlayer.play();
 		} catch (MPDPlayerException e) {
-			event.respond("sorry, couldn't skip the song");
-			LOG.error("skipTrack: Error skipping", e);
+			event.respond("sorry, couldn't play");
+			LOG.error("mpdPlay: Error playing", e);
 		} catch (MPDConnectionException e) {
 			event.respond("sorry, couldn't connect to MPD");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPlay: Error connecting", e);
 		} catch (MPDResponseException e) {
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPlay: Error connecting", e);
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
-			LOG.error("skipTrack: Error connecting", e);
+			LOG.error("mpdPlay: Error connecting", e);
 		}
 	}
 
@@ -602,8 +612,20 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			String song = getSongInfo(mpdPlayer, " - ", true);
-			event.getBot().sendMessage(event.getChannel(), "np: " + song);
+			MPDSong song = mpdPlayer.getCurrentSong();
+			StringBuilder songInfo = new StringBuilder();
+			if (song.getArtist() == null) {
+				songInfo.append(song.getFile()).append(" - ")
+						.append(song.getTitle());
+			} else {
+				songInfo.append(song.getArtist()).append(" - ")
+						.append(song.getTitle());
+				int time = song.getLength();
+				songInfo.append(" [").append(time / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(time % 60))
+						.append("]");
+			}
+			event.getBot().sendMessage(event.getChannel(), "np: " + songInfo.toString());
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
@@ -619,25 +641,6 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 	
-	private String getSongInfo(MPDPlayer mpdPlayer, String separator, final boolean appendLength) throws MPDPlayerException, MPDConnectionException {
-		MPDSong song = mpdPlayer.getCurrentSong();
-		StringBuilder songInfo = new StringBuilder();
-		if (song.getArtist() == null) {
-			songInfo.append(song.getFile()).append(separator)
-					.append(song.getTitle());
-		} else {
-			songInfo.append(song.getArtist()).append(separator)
-					.append(song.getTitle());
-			if (appendLength) {
-				int time = song.getLength();
-				songInfo.append(" [").append(time / 60).append(":");
-				songInfo.append(SECONDS_FORMAT.format(time % 60))
-						.append("]");
-			}
-		}
-		return songInfo.toString();
-	}
-
 	private String combine(String glue, String... values) {
 		int length = values.length;
 		if (length == 0) {
