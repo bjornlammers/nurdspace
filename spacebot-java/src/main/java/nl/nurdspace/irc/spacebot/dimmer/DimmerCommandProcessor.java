@@ -24,13 +24,13 @@ public class DimmerCommandProcessor implements Runnable {
 	public void run() {
 		while (!stop) {
 			try {
-				LOG.info("Haal command...");
+				LOG.debug("Haal command...");
 				DimmerCommand command = commands.poll(1, TimeUnit.SECONDS);
 				if (command != null) {
-					LOG.info("Execute command");
+					LOG.debug("Execute command");
 					command.executeCommand();
 				} else {
-					LOG.info("No command");
+					LOG.debug("No command");
 				}
 			} catch (InterruptedException e) {
 				LOG.error("Interrupted while taking command", e);

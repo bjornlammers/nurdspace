@@ -3,7 +3,9 @@ package nl.nurdspace.irc.spacebot;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -15,9 +17,13 @@ import nl.nurdspace.irc.spacebot.dimmer.RGBDevice;
 import nl.nurdspace.irc.spacebot.dimmer.SimpleDevice;
 
 import org.bff.javampd.MPD;
+import org.bff.javampd.MPDDatabase;
+import org.bff.javampd.MPDDatabase.ScopeType;
 import org.bff.javampd.MPDPlayer;
+import org.bff.javampd.MPDPlaylist;
 import org.bff.javampd.exception.MPDConnectionException;
 import org.bff.javampd.exception.MPDPlayerException;
+import org.bff.javampd.exception.MPDPlaylistException;
 import org.bff.javampd.exception.MPDResponseException;
 import org.bff.javampd.objects.MPDSong;
 import org.pircbotx.Channel;
@@ -240,6 +246,10 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.beledig(event, parameters);
 		} else if ("kutmuziek".equalsIgnoreCase(command)) {
 			this.skipTrack(event, parameters, true);
+		} else if ("find".equalsIgnoreCase(command)) {
+			this.find(event, parameters);
+		} else if ("playlist".equalsIgnoreCase(command)) {
+			this.playlist(event, parameters);
 		} else if ("next".equalsIgnoreCase(command)) {
 			this.skipTrack(event, parameters, false);
 		} else if ("volume".equalsIgnoreCase(command)) {
@@ -449,6 +459,78 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		event.getBot().sendMessage(event.getChannel(), brul);
 	}
 
+	private String argumentsAsString(String args[]) {
+		StringBuilder builder = new StringBuilder();
+		for (int i = 0; i < args.length; i++) {
+			builder.append(args[i]);
+			if (i + 1 < args.length) {
+				builder.append(" ");
+			}
+		}
+		return builder.toString().trim();
+	}
+	
+	private void find(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDDatabase mpdDatabase = mpd.getMPDDatabase();
+			Collection<MPDSong> songs = mpdDatabase.search(ScopeType.ANY, argumentsAsString(parameters));
+			Iterator<MPDSong> songIterator = songs.iterator();
+			if (songs.isEmpty()) {
+				event.getBot().sendMessage(event.getChannel(), "nothing found");
+			} else if (songs.size() > 5) {
+				for (int i = 0; i < 5; i++) {
+					event.getBot().sendMessage(event.getChannel(), getSongInfo(songIterator.next()));
+				}
+				event.getBot().sendMessage(event.getChannel(), "... and " + (songs.size() - 5) + " more");
+			} else {
+				while (songIterator.hasNext()) {
+					event.getBot().sendMessage(event.getChannel(), getSongInfo(songIterator.next()));
+				}
+			}
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("find: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("find: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("find: Error connecting", e);
+		}
+	}
+
+	private void playlist(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlaylist playlist = mpd.getMPDPlaylist();
+			List<MPDSong> songs = playlist.getSongList();
+			MPDSong current = playlist.getCurrentSong();
+			int currentIndex = songs.indexOf(current);
+			int numberOfSongsLeft = songs.size() - currentIndex - 1;
+			if (songs.isEmpty() || numberOfSongsLeft == 0) {
+				event.getBot().sendMessage(event.getChannel(), "geen nummers meer in playlist");
+			} else if (numberOfSongsLeft > 5) {
+				for (int i = 0; i < 5; i++) {
+					event.getBot().sendMessage(event.getChannel(), getSongInfo(songs.get(currentIndex + i + 1)));
+				}
+				event.getBot().sendMessage(event.getChannel(), "... and " + (songs.size() - currentIndex - 6) + " more");
+			} else {
+				for (int i = currentIndex + 1; i < songs.size(); i++) {
+					event.getBot().sendMessage(event.getChannel(), getSongInfo(songs.get(i)));
+				}
+			}
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("playlist: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("playlist: Error connecting", e);
+		} catch (MPDPlaylistException e) {
+			event.respond("sorry, couldn't obtain playlist info");
+			LOG.error("playlist: Error getting current song", e);
+		}
+	}
+
 	private void skipTrack(MessageEvent event, String[] parameters, boolean kutmuziek) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
@@ -618,19 +700,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			MPDSong song = mpdPlayer.getCurrentSong();
-			StringBuilder songInfo = new StringBuilder();
-			if (song.getArtist() == null) {
-				songInfo.append(song.getFile()).append(" - ")
-						.append(song.getTitle());
-			} else {
-				songInfo.append(song.getArtist()).append(" - ")
-						.append(song.getTitle());
-				int time = song.getLength();
-				songInfo.append(" [").append(time / 60).append(":");
-				songInfo.append(SECONDS_FORMAT.format(time % 60))
-						.append("]");
-			}
-			event.getBot().sendMessage(event.getChannel(), "np: " + songInfo.toString());
+			event.getBot().sendMessage(event.getChannel(), "np: " + getSongInfo(song));
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
@@ -644,6 +714,22 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			event.respond("sorry, couldn't find the MPD host");
 			LOG.error("showSong: Error connecting", e);
 		}
+	}
+	
+	private String getSongInfo(MPDSong song) {
+		StringBuilder songInfo = new StringBuilder();
+		if (song.getArtist() == null) {
+			songInfo.append(song.getFile()).append(" - ")
+					.append(song.getTitle());
+		} else {
+			songInfo.append(song.getArtist()).append(" - ")
+					.append(song.getTitle());
+			int time = song.getLength();
+			songInfo.append(" [").append(time / 60).append(":");
+			songInfo.append(SECONDS_FORMAT.format(time % 60))
+					.append("]");
+		}
+		return songInfo.toString();
 	}
 	
 	private String combine(String glue, String... values) {
