@@ -260,6 +260,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.zachter(event, parameters);
 		} else if ("pause".equalsIgnoreCase(command)) {
 			this.mpdPause(event, parameters);
+		} else if ("stop".equalsIgnoreCase(command)) {
+			this.mpdStop(event, parameters);
 		} else if ("play".equalsIgnoreCase(command)) {
 			this.mpdPlay(event, parameters);
 		} else if ("np".equalsIgnoreCase(command)) {
@@ -673,6 +675,25 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
 			LOG.error("mpdPause: Error connecting", e);
+		}
+	}
+
+	private void mpdStop(MessageEvent event, String[] parameters) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			mpdPlayer.stop();
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't stop");
+			LOG.error("mpdStop: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("mpdStop: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("mpdStop: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("mpdStop: Error connecting", e);
 		}
 	}
 
