@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ import org.pircbotx.exception.IrcException;
 import org.pircbotx.exception.NickAlreadyInUseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Control class for spacebot. Assembles the parts and starts the bot.
@@ -48,12 +51,18 @@ public class SpaceBotControl {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		// Create a new bot
 		PircBotX bot = new PircBotX();
 		
 		// Configurable settings
 		Map settings = createInitialSettings();
+		
+		// Setup http server
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/status", new SpaceStatusHttpHandler());
+        server.setExecutor(null);
+        server.start();
 		
 		// Setup this bot
 		bot.setName((String) settings.get(SETTING_NICK));
@@ -127,6 +136,9 @@ public class SpaceBotControl {
 			LOG.error("main: error connecting", ex);
 		} catch (IOException ex) {
 			LOG.error("main: error connecting", ex);
+		}
+		if (server != null) {
+			server.stop(0);
 		}
 		System.exit(0);
 	}
