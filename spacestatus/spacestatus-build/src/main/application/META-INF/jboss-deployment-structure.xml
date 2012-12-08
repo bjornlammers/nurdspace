@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Documentatie: https://docs.jboss.org/author/display/AS71/Class+Loading+in+AS7 -->
+<!-- Schema definitie voor AS 7.2.0: https://raw.github.com/jbossas/jboss-as/master/build/src/main/resources/docs/schema/jboss-deployment-structure-1_2.xsd -->
+<!-- Schema definitie voor AS 7.1.1: https://raw.github.com/jbossas/jboss-as/master/build/src/main/resources/docs/schema/jboss-deployment-structure-1_1.xsd -->
+<jboss-deployment-structure>
+    <!-- ear -->
+    <deployment>
+    </deployment>
+    <sub-deployment name="spacestatus-log.jar">
+    </sub-deployment>
+</jboss-deployment-structure>
