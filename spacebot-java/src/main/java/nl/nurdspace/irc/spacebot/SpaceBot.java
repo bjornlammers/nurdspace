@@ -1,5 +1,11 @@
 package nl.nurdspace.irc.spacebot;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -15,6 +21,9 @@ import nl.nurdspace.irc.spacebot.dimmer.Dimmer;
 import nl.nurdspace.irc.spacebot.dimmer.DimmerDevice;
 import nl.nurdspace.irc.spacebot.dimmer.RGBDevice;
 import nl.nurdspace.irc.spacebot.dimmer.SimpleDevice;
+import nl.nurdspace.irc.spacebot.inventory.HtmlInventory;
+import nl.nurdspace.irc.spacebot.inventory.Inventory;
+import nl.nurdspace.irc.spacebot.inventory.InventoryLocation;
 
 import org.bff.javampd.MPD;
 import org.bff.javampd.MPDDatabase;
@@ -272,6 +281,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.showLocks(event, parameters);
 		} else if ("open".equalsIgnoreCase(command) || "state".equalsIgnoreCase(command)) {
 			this.showOpen(event, parameters);
+		} else if ("locate".equalsIgnoreCase(command) || "waaris".equalsIgnoreCase(command)) {
+			this.locate(event, parameters);
 		} else if ("fixtopic".equalsIgnoreCase(command)) {
 			if (channel.isOp(event.getBot().getUserBot())) {
 				this.changeTopic(SpaceStatus.getInstance().isOpen());
@@ -281,6 +292,46 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
+	private void locate(MessageEvent event, String[] parameters) {
+		if (parameters.length != 1) {
+			event.respond("geef precies 1 woord als zoekterm");
+		} else {
+			HttpURLConnection urlConnection = null;
+			Inventory inventory = null;
+		    try {     
+				URL url = new URL("http://nurdspace.nl/Expedits");   
+			    urlConnection = (HttpURLConnection) url.openConnection();   
+		        InputStream input = new BufferedInputStream(urlConnection.getInputStream());
+		        inventory = new HtmlInventory(input);
+		    } catch (MalformedURLException e) {
+		    	LOG.error("Lezen van inventory", e);
+		    } catch (IOException e) {
+		    	LOG.error("Lezen van inventory", e);
+		    } finally {     
+		        urlConnection.disconnect();   
+		    }
+		    List<InventoryLocation> locations = inventory.locate(parameters[0]);
+		    if (locations.size() == 0) {
+				event.respond("niets gevonden");
+		    } else if (locations.size() > 3) {
+				event.respond("te veel resultaten: " + locations.size());
+		    } else {
+		    	for (InventoryLocation location : locations) {
+		    		String contents = location.getContents();
+		    		int start = contents.indexOf('<');
+		    		int end = contents.indexOf('>', start);
+		    		while (start >= 0 && end >= 0) {
+		    			contents = contents.substring(0, start) + contents.substring(end + 1);
+			    		start = contents.indexOf('<');
+			    		end = contents.indexOf('>', start);
+		    		}
+		    		
+					event.getBot().sendMessage(event.getChannel(), "[" + location.getColumn() + location.getRow() + "] " + contents);
+				}
+		    }
+		}
+	}
+	
 	private void showLocks(MessageEvent event, String[] parameters) {
 		event.getBot().sendMessage(event.getChannel(), "Front door is " + (SpaceStatus.getInstance().isFrontDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isFrontDoorLocked() ? "locked" : "unlocked")));
 		event.getBot().sendMessage(event.getChannel(), "Back door is " + (SpaceStatus.getInstance().isBackDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isBackDoorLocked() ? "locked" : "unlocked")));
