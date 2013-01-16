@@ -5,6 +5,7 @@ import static org.rrd4j.ConsolFun.MAX;
 import static org.rrd4j.ConsolFun.MIN;
 
 import java.awt.Color;
+import java.io.File;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -52,7 +53,7 @@ public class JsonStatusRetriever {
     	rrdDef = createRrdDef();
     }
     
-    @Schedule(hour = "*", minute = "*", second = "0")
+    @Schedule(hour = "*", minute = "*", second = "0", persistent = false)
     public void removeOldReports() {
     	String json = getRemoteStatus();
     	if (json == null) {
@@ -72,9 +73,16 @@ public class JsonStatusRetriever {
 				}
         		LOG.info("space: " + (Boolean.TRUE.equals(open) ? "open" : "closed") + ", temperature: " + temp);
         		try {
+        			if (!new File(RRD_PATH).exists()) {
+        				RrdDb rrd = new RrdDb(rrdDef);
+        				LOG.info("RRD file opnieuw aangemaakt");
+        				rrd.close();
+        			}
 					RrdDb rrdDb = new RrdDb(RRD_PATH);
 					Sample sample = rrdDb.createSample();
-					sample.setTime(Util.getTimestamp(new Date()));
+					long timestamp = Util.getTimestamp(new Date());
+					LOG.info("timestamp: " + timestamp);
+					sample.setTime(timestamp);
 					if (temp != null) {
 						String tempValue = temp.substring(0, temp.length() - 1);
 						sample.setValue("temperature", Double.parseDouble(tempValue));
@@ -93,12 +101,13 @@ public class JsonStatusRetriever {
     	}
     }
     
-    @Schedule(hour = "*", minute = "*", second = "15")
+//    @Schedule(hour = "*", minute = "0,5,10,15,20,25,30,35,40,45,50,55", second = "15")
+    @Schedule(hour = "*", minute = "*", second = "15", persistent = false)
     public void createGraph() {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/rrd/hourly-temp.png");
+		gDef.setFilename("/home/spacebot/webdir/hourly-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneHourEarlier = new GregorianCalendar();
 		oneHourEarlier.add(Calendar.HOUR, -1);
@@ -107,7 +116,9 @@ public class JsonStatusRetriever {
 		gDef.setTitle("Temperatures last hour");
 		gDef.setVerticalLabel("temperature");
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
-		gDef.line("temperature", Color.GREEN, "temperature");
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
 		gDef.setImageInfo("");
 		gDef.setPoolUsed(false);
 		gDef.setImageFormat("png");
@@ -119,14 +130,37 @@ public class JsonStatusRetriever {
 		} catch (IOException e) {
 			LOG.error("Kon uur-graph niet schrijven", e);
 		}
+		
+		gDef = new RrdGraphDef();
+		gDef.setWidth(160);
+		gDef.setHeight(96);
+		gDef.setFilename("/home/spacebot/webdir/hourly-temp-small.png");
+		gDef.setStartTime(Util.getTimestamp(oneHourEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+		gDef.setNoLegend(true);
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Small week graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon small week graph niet schrijven", e);
+		}
     }
     
-    @Schedule(hour = "*", minute = "0,10,20,30,40,50")
+    @Schedule(hour = "*", minute = "0,15,30,45", persistent = false)
     public void createDayGraph() {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/rrd/daily-temp.png");
+		gDef.setFilename("/home/spacebot/webdir/daily-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneDayEarlier = new GregorianCalendar();
 		oneDayEarlier.add(Calendar.DAY_OF_YEAR, -1);
@@ -135,7 +169,9 @@ public class JsonStatusRetriever {
 		gDef.setTitle("Temperatures last day");
 		gDef.setVerticalLabel("temperature");
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
-		gDef.line("temperature", Color.GREEN, "temperature");
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
 		gDef.setImageInfo("");
 		gDef.setPoolUsed(false);
 		gDef.setImageFormat("png");
@@ -146,6 +182,137 @@ public class JsonStatusRetriever {
 			LOG.info("Dag-graph weggeschreven");
 		} catch (IOException e) {
 			LOG.error("Kon dag-graph niet schrijven", e);
+		}
+		
+		
+		gDef = new RrdGraphDef();
+		gDef.setWidth(160);
+		gDef.setHeight(96);
+		gDef.setFilename("/home/spacebot/webdir/daily-temp-small.png");
+		gDef.setStartTime(Util.getTimestamp(oneDayEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+		gDef.setNoLegend(true);
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Small day graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon small day graph niet schrijven", e);
+		}
+    }
+    
+    @Schedule(hour = "1,4,7,10,13,16,19,22", minute = "25", persistent = false)
+    public void createWeekGraph() {
+		RrdGraphDef gDef = new RrdGraphDef();
+		gDef.setWidth(800);
+		gDef.setHeight(600);
+		gDef.setFilename("/home/spacebot/webdir/weekly-temp.png");
+		Calendar now = new GregorianCalendar();
+		Calendar oneWeekEarlier = new GregorianCalendar();
+		oneWeekEarlier.add(Calendar.DAY_OF_YEAR, -7);
+		gDef.setStartTime(Util.getTimestamp(oneWeekEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.setTitle("Temperatures last week");
+		gDef.setVerticalLabel("temperature");
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Week-graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon week-graph niet schrijven", e);
+		}
+		
+		gDef = new RrdGraphDef();
+		gDef.setWidth(160);
+		gDef.setHeight(96);
+		gDef.setFilename("/home/spacebot/webdir/weekly-temp-small.png");
+		gDef.setStartTime(Util.getTimestamp(oneWeekEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+		gDef.setNoLegend(true);
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Small week graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon small week graph niet schrijven", e);
+		}
+    }
+    
+    
+    @Schedule(hour = "13", minute = "20", persistent = false)
+    public void createMonthGraph() {
+		RrdGraphDef gDef = new RrdGraphDef();
+		gDef.setWidth(800);
+		gDef.setHeight(600);
+		gDef.setFilename("/home/spacebot/webdir/monthly-temp.png");
+		Calendar now = new GregorianCalendar();
+		Calendar oneMonthEarlier = new GregorianCalendar();
+		oneMonthEarlier.add(Calendar.MONTH, -1);
+		gDef.setStartTime(Util.getTimestamp(oneMonthEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.setTitle("Temperatures last month");
+		gDef.setVerticalLabel("temperature");
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Month-graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon month-graph niet schrijven", e);
+		}
+
+		gDef = new RrdGraphDef();
+		gDef.setWidth(160);
+		gDef.setHeight(96);
+		gDef.setFilename("/home/spacebot/webdir/monthly-temp-small.png");
+		gDef.setStartTime(Util.getTimestamp(oneMonthEarlier));
+		gDef.setEndTime(Util.getTimestamp(now));
+		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
+		gDef.datasource("open", RRD_PATH, "open", AVERAGE);
+		gDef.background("open", new Color(200, 255, 200));
+		gDef.line("temperature", Color.RED, "temperature", 3f);
+		gDef.setImageInfo("");
+		gDef.setPoolUsed(false);
+		gDef.setImageFormat("png");
+		gDef.setNoLegend(true);
+
+		// create graph finally
+		try {
+			RrdGraph graph = new RrdGraph(gDef);
+			LOG.info("Small week graph weggeschreven");
+		} catch (IOException e) {
+			LOG.error("Kon small week graph niet schrijven", e);
 		}
     }
     

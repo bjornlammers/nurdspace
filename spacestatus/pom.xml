@@ -86,7 +86,7 @@
 			<dependency>
 				<groupId>com.google.code</groupId>
 				<artifactId>rrd4j</artifactId>
-				<version>2.1.1</version>
+				<version>2.2-NURDSPACE</version>
 			</dependency>
 
             <!-- test -->
