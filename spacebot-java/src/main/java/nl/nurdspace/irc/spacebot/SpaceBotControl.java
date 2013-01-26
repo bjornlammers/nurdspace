@@ -81,6 +81,7 @@ public class SpaceBotControl {
 			Dimmer dimmer = new Dimmer();
 			dimmer.setHost((String) settings.get(SETTING_DIMMER_HOST));
 			SpaceBot spaceBot = new SpaceBot(bot.getChannel((String) settings.get(SETTING_CHANNEL)), dimmer, (String) settings.get(SETTING_MPD_HOST), (Integer) settings.get(SETTING_DIMMER_CHANNEL), (List<Integer>) settings.get(SETTING_DIMMER_CHANNELS), (List<DimmerDevice>) settings.get(SETTING_DIMMER_DEVICES));
+			spaceBot.setSerialMonitor(serial);
 			SpaceStatus.getInstance().addListener(spaceBot);
 			TemperatureLogger tempLogger = new TemperatureLogger();
 			SpaceStatus.getInstance().addListener(tempLogger);

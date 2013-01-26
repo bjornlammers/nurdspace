@@ -25,6 +25,7 @@ import nl.nurdspace.irc.spacebot.inventory.HtmlInventory;
 import nl.nurdspace.irc.spacebot.inventory.Inventory;
 import nl.nurdspace.irc.spacebot.inventory.InventoryLocation;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.bff.javampd.MPD;
 import org.bff.javampd.MPDDatabase;
 import org.bff.javampd.MPDDatabase.ScopeType;
@@ -68,6 +69,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	private final Channel channel;
 	private final Dimmer dimmer;
 	private final String mpdHost;
+	private SerialMonitor serial;
 	private int dmxChannel;
 	private int flashRepeats;
 	private int flashTimeOff;
@@ -97,6 +99,10 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		this.dimmerDevices = dimmerDevices;
 	}
 
+	public void setSerialMonitor(SerialMonitor serial) {
+		this.serial = serial;
+	}
+	
 	public void setDimmerChannel(int dimmerChannel) {
 		this.dmxChannel = dimmerChannel;
 	}
@@ -219,6 +225,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.flash(event, parameters);
 		} else if ("fade".equalsIgnoreCase(command)) {
 			this.fade(event, parameters);
+		} else if ("speak".equalsIgnoreCase(command) || "wall".equalsIgnoreCase(command)) {
+			this.wall(event, parameters);
 		} else if ("devices".equalsIgnoreCase(command)) {
 			StringBuffer devices = new StringBuffer();
 			for (int i = 0; i < this.dimmerDevices.size(); i++) {
@@ -326,7 +334,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			    		end = contents.indexOf('>', start);
 		    		}
 		    		
-					event.getBot().sendMessage(event.getChannel(), "[" + location.getColumn() + location.getRow() + "] " + contents);
+					event.getBot().sendMessage(event.getChannel(), "[" + location.getColumn() + location.getRow() + "] " + StringEscapeUtils.unescapeHtml(contents));
 				}
 		    }
 		}
@@ -802,6 +810,14 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 					.append("]");
 		}
 		return songInfo.toString();
+	}
+	
+	private void wall(MessageEvent event, String[] parameters) {
+		String text = combine(" ", parameters);
+		if (text != null && serial != null) {
+			String nick = event.getUser().getNick();
+			serial.sendToLedPanel(nick.toUpperCase() + "-" + text.toUpperCase());
+		}
 	}
 	
 	private String combine(String glue, String... values) {
