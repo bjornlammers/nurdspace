@@ -60,12 +60,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	private static final DecimalFormat TEMP_FORMAT = new DecimalFormat("##0.0");
 	private static final DecimalFormat SECONDS_FORMAT = new DecimalFormat("00");
 
-	private static final String[] KUTMUZIEKBERICHTEN = new String[]{"Niemand luistert nog naar %s",
-			"Van %s ga ik spontaan aan de spuitpoep",
-			"%s is voor lutsers",
-			"%s schaadt de gezondheid. Het kan longkanker en hartklachten veroorzaken.",
-			"Kut.mu.ziek de; v 1. %s",
-			"Volgens surrounder is %s nog erger dan Windows 3.1"};
+	private static final String[] KUTMUZIEKBERICHTEN = new String[]{"Niemand luistert nog naar %1$s",
+			"Van %1$s gaat %2$s spontaan aan de spuitpoep",
+			"%1$ss is voor lutsers",
+			"%1$s schaadt de gezondheid. Het kan longkanker en hartklachten veroorzaken.",
+			"Kut.mu.ziek de; v 1. %1$s",
+			"Volgens %2$s is %1$s nog erger dan Windows 3.1"};
 	private final Channel channel;
 	private final Dimmer dimmer;
 	private final String mpdHost;
@@ -615,7 +615,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			mpd.close();
 			if (kutmuziek) {
 				LOG.debug("kutmuziek random = " + random);
-				String message = String.format(KUTMUZIEKBERICHTEN[random], songInfoString.toString());
+				String message = String.format(KUTMUZIEKBERICHTEN[random], songInfoString.toString(), event.getUser().getNick());
 				event.getBot().sendMessage(event.getChannel(), message);
 			}
 		} catch (MPDPlayerException e) {
