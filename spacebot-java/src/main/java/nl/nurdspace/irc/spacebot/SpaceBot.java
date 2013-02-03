@@ -183,7 +183,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	 */
 	public void onMessage(MessageEvent event) throws Exception {
 		String message = event.getMessage();
-		if (message.startsWith("!")) {
+		if (Command.isCommand(message)) {
 			// Command
 			try {
 				handleCommand(event);
@@ -212,30 +212,22 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	}
 
 	private void handleCommand(MessageEvent event) {
-		String message = event.getMessage();
-		String commandString = message.substring(1);
-		String[] commandArray = commandString.split(" ");
-		String command = commandArray[0];
-		String[] parameters = new String[] {};
-		if (commandArray.length > 1) {
-			parameters = new String[commandArray.length - 1];
-			System.arraycopy(commandArray, 1, parameters, 0, parameters.length);
-		}
-		if ("flash".equalsIgnoreCase(command)) {
-			this.flash(event, parameters);
-		} else if ("fade".equalsIgnoreCase(command)) {
-			this.fade(event, parameters);
-		} else if ("speak".equalsIgnoreCase(command) || "wall".equalsIgnoreCase(command)) {
-			this.wall(event, parameters);
-		} else if ("devices".equalsIgnoreCase(command)) {
+		Command command = new Command(event.getMessage());
+		if ("flash".equalsIgnoreCase(command.getCommand())) {
+			this.flash(event);
+		} else if ("fade".equalsIgnoreCase(command.getCommand())) {
+			this.fade(event, command);
+		} else if ("speak".equalsIgnoreCase(command.getCommand()) || "wall".equalsIgnoreCase(command.getCommand())) {
+			this.wall(event, command);
+		} else if ("devices".equalsIgnoreCase(command.getCommand())) {
 			StringBuffer devices = new StringBuffer();
 			for (int i = 0; i < this.dimmerDevices.size(); i++) {
 				DimmerDevice device = dimmerDevices.get(i);
 				devices.append(i).append(": [").append(device).append("] ");
 			};
 			event.getBot().sendMessage(event.getChannel(), devices.toString());
-		} else if ("device".equalsIgnoreCase(command)) {
-			int deviceNumber = Integer.parseInt(parameters[0].substring(1));
+		} else if ("device".equalsIgnoreCase(command.getCommand())) {
+			int deviceNumber = Integer.parseInt(command.getArgs()[0].substring(1));
 			DimmerDevice device = dimmerDevices.get(deviceNumber);
 			if (device instanceof SimpleDevice) {
 				StringBuffer buf = new StringBuffer("Device ").append(deviceNumber).append(": ");
@@ -251,47 +243,47 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			} else {
 				event.getBot().sendMessage(event.getChannel(), "onbekend type device");
 			}
-		} else if ("lights".equalsIgnoreCase(command)) {
-			this.lights(event, parameters);
-		} else if ("status".equalsIgnoreCase(command)) {
-			this.status(event, parameters);
-		} else if ("temp".equalsIgnoreCase(command)) {
-			this.temp(event, parameters);
-		} else if ("brul".equalsIgnoreCase(command)) {
-			this.brul(event, parameters);
-		} else if ("beledig".equalsIgnoreCase(command)) {
-			this.beledig(event, parameters);
-		} else if ("kutmuziek".equalsIgnoreCase(command)) {
-			this.skipTrack(event, parameters, true);
-		} else if ("find".equalsIgnoreCase(command)) {
-			this.find(event, parameters);
-		} else if ("playlist".equalsIgnoreCase(command)) {
-			this.playlist(event, parameters);
-		} else if ("next".equalsIgnoreCase(command)) {
-			this.skipTrack(event, parameters, false);
-		} else if ("volume".equalsIgnoreCase(command)) {
-			this.volume(event, parameters);
-		} else if ("louder".equalsIgnoreCase(command) || "harder".equalsIgnoreCase(command)) {
-			this.harder(event, parameters);
-		} else if ("quieter".equalsIgnoreCase(command) || "zachter".equalsIgnoreCase(command)) {
-			this.zachter(event, parameters);
-		} else if ("pause".equalsIgnoreCase(command)) {
-			this.mpdPause(event, parameters);
-		} else if ("stop".equalsIgnoreCase(command)) {
-			this.mpdStop(event, parameters);
-		} else if ("play".equalsIgnoreCase(command)) {
-			this.mpdPlay(event, parameters);
-		} else if ("np".equalsIgnoreCase(command)) {
-			this.showSong(event, parameters);
-		} else if ("element".equalsIgnoreCase(command)) {
-			this.showElement(event, parameters);
-		} else if ("lock".equalsIgnoreCase(command)) {
-			this.showLocks(event, parameters);
-		} else if ("open".equalsIgnoreCase(command) || "state".equalsIgnoreCase(command)) {
-			this.showOpen(event, parameters);
-		} else if ("locate".equalsIgnoreCase(command) || "waaris".equalsIgnoreCase(command)) {
-			this.locate(event, parameters);
-		} else if ("fixtopic".equalsIgnoreCase(command)) {
+		} else if ("lights".equalsIgnoreCase(command.getCommand())) {
+			this.lights(event);
+		} else if ("status".equalsIgnoreCase(command.getCommand())) {
+			this.status(event);
+		} else if ("temp".equalsIgnoreCase(command.getCommand())) {
+			this.temp(event);
+		} else if ("brul".equalsIgnoreCase(command.getCommand())) {
+			this.brul(event, command);
+		} else if ("beledig".equalsIgnoreCase(command.getCommand())) {
+			this.beledig(event);
+		} else if ("kutmuziek".equalsIgnoreCase(command.getCommand())) {
+			this.skipTrack(event, true);
+		} else if ("find".equalsIgnoreCase(command.getCommand())) {
+			this.find(event, command);
+		} else if ("playlist".equalsIgnoreCase(command.getCommand())) {
+			this.playlist(event);
+		} else if ("next".equalsIgnoreCase(command.getCommand())) {
+			this.skipTrack(event, false);
+		} else if ("volume".equalsIgnoreCase(command.getCommand())) {
+			this.volume(event, command);
+		} else if ("louder".equalsIgnoreCase(command.getCommand()) || "harder".equalsIgnoreCase(command.getCommand())) {
+			this.harder(event, command);
+		} else if ("quieter".equalsIgnoreCase(command.getCommand()) || "zachter".equalsIgnoreCase(command.getCommand())) {
+			this.zachter(event, command);
+		} else if ("pause".equalsIgnoreCase(command.getCommand())) {
+			this.mpdPause(event);
+		} else if ("stop".equalsIgnoreCase(command.getCommand())) {
+			this.mpdStop(event);
+		} else if ("play".equalsIgnoreCase(command.getCommand())) {
+			this.mpdPlay(event);
+		} else if ("np".equalsIgnoreCase(command.getCommand())) {
+			this.showSong(event);
+		} else if ("element".equalsIgnoreCase(command.getCommand())) {
+			this.showElement(event, command);
+		} else if ("lock".equalsIgnoreCase(command.getCommand())) {
+			this.showLocks(event);
+		} else if ("open".equalsIgnoreCase(command.getCommand()) || "state".equalsIgnoreCase(command.getCommand())) {
+			this.showOpen(event);
+		} else if ("locate".equalsIgnoreCase(command.getCommand()) || "waaris".equalsIgnoreCase(command.getCommand())) {
+			this.locate(event, command);
+		} else if ("fixtopic".equalsIgnoreCase(command.getCommand())) {
 			if (channel.isOp(event.getBot().getUserBot())) {
 				this.changeTopic(SpaceStatus.getInstance().isOpen());
 			} else {
@@ -300,8 +292,8 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void locate(MessageEvent event, String[] parameters) {
-		if (parameters.length != 1) {
+	private void locate(MessageEvent event, Command command) {
+		if (command.getNumberOfArguments() != 1) {
 			event.respond("geef precies 1 woord als zoekterm");
 		} else {
 			HttpURLConnection urlConnection = null;
@@ -318,7 +310,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		    } finally {     
 		        urlConnection.disconnect();   
 		    }
-		    List<InventoryLocation> locations = inventory.locate(parameters[0]);
+		    List<InventoryLocation> locations = inventory.locate(command.getArgs()[0]);
 		    if (locations.size() == 0) {
 				event.respond("niets gevonden");
 		    } else if (locations.size() > 3) {
@@ -340,21 +332,22 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 	
-	private void showLocks(MessageEvent event, String[] parameters) {
+	private void showLocks(MessageEvent event) {
 		event.getBot().sendMessage(event.getChannel(), "Front door is " + (SpaceStatus.getInstance().isFrontDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isFrontDoorLocked() ? "locked" : "unlocked")));
 		event.getBot().sendMessage(event.getChannel(), "Back door is " + (SpaceStatus.getInstance().isBackDoorLocked() == null ? "unknown" : (SpaceStatus.getInstance().isBackDoorLocked() ? "locked" : "unlocked")));
 	}
 	
-	private void showElement(MessageEvent event, String[] parameters) {
-		if (parameters.length > 0) {
+	private void showElement(MessageEvent event, Command command) {
+		if (command.getNumberOfArguments() > 0) {
 			Element element;
+			String arg = command.getArgs()[0];
 			
 			// Try abbreviation
-			element = Elements.getInstance().getElementByAbbreviation(parameters[0]);
+			element = Elements.getInstance().getElementByAbbreviation(arg);
 			if (element == null) {
 				// Try number
 				try {
-					int number = Integer.parseInt(parameters[0]);
+					int number = Integer.parseInt(arg);
 					element = Elements.getInstance().getElementByNumber(number);
 				} catch (NumberFormatException e) {
 					// Not important
@@ -362,22 +355,22 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			}
 			if (element == null) {
 				// Try name
-				element = Elements.getInstance().getElementByName(parameters[0]);
+				element = Elements.getInstance().getElementByName(arg);
 				// TODO scan through list and check part of name
 			}
 			if (element == null) {
-				event.getBot().sendMessage(event.getChannel(), "element '" + parameters[0] + "' is unknown");
+				event.getBot().sendMessage(event.getChannel(), "element '" + arg + "' is unknown");
 			} else {
 				event.getBot().sendMessage(event.getChannel(), element.getNumber() + ". " + element.getName() + " (" + element.getAbbreviation() + "); atomic weight: " + element.getWeight());
 			}
 		}
 	}
 	
-	private void showOpen(MessageEvent event, String[] parameters) {
+	private void showOpen(MessageEvent event) {
 		event.getBot().sendMessage(event.getChannel(), getSpaceOpenMessage());
 	}
 	
-	private void flash(MessageEvent event, String[] parameters) {
+	private void flash(MessageEvent event) {
 		if (SpaceStatus.getInstance().isOpen()) {
 			dimmer.flash(dimmerDevices, this.flashRepeats,
 					this.flashTimeOn, this.flashTimeOff);
@@ -386,36 +379,36 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void fade(MessageEvent event, String[] parameters) {
+	private void fade(MessageEvent event, Command command) {
 		if (SpaceStatus.getInstance().isOpen()) {
 			// Drie formaten: fade <level>; fade <level> <kanaal>; fade <level> #<device>
 			// Later nog: fade <r,g,b> #<device>
-			switch (parameters.length) {
+			switch (command.getNumberOfArguments()) {
 			case 0:
 				event.respond("give me a level or RGB value (and optionally a channel/device)");
 				break;
 			case 1:
-				if (parameters[0].startsWith("#")) {
+				if (command.getArgs()[0].startsWith("#")) {
 					// RGB kan niet op default channel
 					event.respond("give me a device if you want to use rgb!");
 				} else {
-					dimmer.fade(dmxChannel, Integer.parseInt(parameters[0]));
+					dimmer.fade(dmxChannel, Integer.parseInt(command.getArgs()[0]));
 				}
 				break;
 			case 2:
-				if (parameters[0].startsWith("#")) {
-					if (parameters[1].startsWith("#")) {
+				if (command.getArgs()[0].startsWith("#")) {
+					if (command.getArgs()[1].startsWith("#")) {
 						// RGB op device
 						// Check of device rgb is
-						int deviceNumber = Integer.parseInt(parameters[1].substring(1).trim());
+						int deviceNumber = Integer.parseInt(command.getArgs()[1].substring(1).trim());
 						if (dimmerDevices.get(deviceNumber) instanceof RGBDevice) {
 							RGBDevice device = (RGBDevice) dimmerDevices.get(deviceNumber);
-							if (parameters[0].length() != 7) {
+							if (command.getArgs()[0].length() != 7) {
 								event.respond("give me an RGB value in hex (rrggbb), like so: #FF0080");
 							} else {
-								String red = parameters[0].substring(1, 3);
-								String green = parameters[0].substring(3, 5);
-								String blue = parameters[0].substring(5);
+								String red = command.getArgs()[0].substring(1, 3);
+								String green = command.getArgs()[0].substring(3, 5);
+								String blue = command.getArgs()[0].substring(5);
 								dimmer.fadeAbsolute(device.getRed(), Integer.parseInt(red, 16));
 								dimmer.fadeAbsolute(device.getGreen(), Integer.parseInt(green, 16));
 								dimmer.fadeAbsolute(device.getBlue(), Integer.parseInt(blue, 16));
@@ -428,20 +421,20 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 					}
 				} else {
 					// "Gewoon" level
-					int level = Integer.parseInt(parameters[0]);
-					if ("all".equals(parameters[1])) {
+					int level = Integer.parseInt(command.getArgs()[0]);
+					if ("all".equals(command.getArgs()[1])) {
 						for (int channel : dimmerChannels) {
 							dimmer.fade(channel, level);
 						}
-					} else if (parameters[1].startsWith("#")) {
-						int deviceNumber = Integer.parseInt(parameters[1].substring(1).trim());
+					} else if (command.getArgs()[1].startsWith("#")) {
+						int deviceNumber = Integer.parseInt(command.getArgs()[1].substring(1).trim());
 						DimmerDevice device = dimmerDevices.get(deviceNumber);
 						for (int channel : device.getChannels()) {
 							dimmer.fade(channel, level);
 						}
 					} else {
 						// Ouderwets: level op channel
-						dimmer.fade(Integer.parseInt(parameters[1]), level);
+						dimmer.fade(Integer.parseInt(command.getArgs()[1]), level);
 					}
 				}
 			}
@@ -450,7 +443,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void lights(MessageEvent event, String[] parameters) {
+	private void lights(MessageEvent event) {
 		Integer fluorescents = SpaceStatus.getInstance().getFluorescentLighting();
 		String fluorescentsMessage = "unknown";
 		if (fluorescents != null) {
@@ -484,7 +477,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		event.getBot().sendMessage(event.getChannel(), dimmedLights.toString());
 	}
 
-	private void temp(MessageEvent event, String[] parameters) {
+	private void temp(MessageEvent event) {
 		event.getBot().sendMessage(
 				event.getChannel(),
 				"Space temperature is "
@@ -492,7 +485,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 								.getTemperature()) + " degrees Celsius");
 	}
 
-	private void status(MessageEvent event, String[] parameters) {
+	private void status(MessageEvent event) {
 		Boolean fluorescents = SpaceStatus.getInstance().isFluorescentLightOn();
 		String fluorescentsMessage = "fluorescent lights: ";
 		if (fluorescents == null) {
@@ -510,32 +503,27 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 				getSpaceOpenMessage() + "; " + fluorescentsMessage + "; " + tempMessage);
 	}
 
-	private void beledig(MessageEvent event, String[] parameters) {
+	private void beledig(MessageEvent event) {
 		// TODO implement
 	}
 
-	private void brul(MessageEvent event, String[] parameters) {
-		String brul = Colors.BOLD + combine(" ", parameters).toUpperCase()
+	private void brul(MessageEvent event, Command command) {
+		String arg;
+		if (command.getArgumentString() != null) {
+			arg = command.getArgumentString();
+		} else {
+			arg = "zelluf";
+		}
+		String brul = Colors.BOLD + arg.toUpperCase()
 				+ "!" + Colors.NORMAL;
 		event.getBot().sendMessage(event.getChannel(), brul);
 	}
 
-	private String argumentsAsString(String args[]) {
-		StringBuilder builder = new StringBuilder();
-		for (int i = 0; i < args.length; i++) {
-			builder.append(args[i]);
-			if (i + 1 < args.length) {
-				builder.append(" ");
-			}
-		}
-		return builder.toString().trim();
-	}
-	
-	private void find(MessageEvent event, String[] parameters) {
+	private void find(MessageEvent event, Command command) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDDatabase mpdDatabase = mpd.getMPDDatabase();
-			Collection<MPDSong> songs = mpdDatabase.search(ScopeType.ANY, argumentsAsString(parameters));
+			Collection<MPDSong> songs = mpdDatabase.search(ScopeType.ANY, command.getArgumentString());
 			Iterator<MPDSong> songIterator = songs.iterator();
 			if (songs.isEmpty()) {
 				event.getBot().sendMessage(event.getChannel(), "nothing found");
@@ -560,7 +548,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void playlist(MessageEvent event, String[] parameters) {
+	private void playlist(MessageEvent event) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlaylist playlist = mpd.getMPDPlaylist();
@@ -592,7 +580,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void skipTrack(MessageEvent event, String[] parameters, boolean kutmuziek) {
+	private void skipTrack(MessageEvent event, boolean kutmuziek) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
@@ -632,13 +620,13 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void zachter(MessageEvent event, String[] parameters) {
+	private void zachter(MessageEvent event, Command command) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			int hoeveel = 10;
-			if (parameters.length == 1) {
-				hoeveel = Integer.parseInt(parameters[0]);
+			if (command.getNumberOfArguments() == 1) {
+				hoeveel = Integer.parseInt(command.getArgs()[0]);
 			}
 			int huidig = mpdPlayer.getVolume();
 			int nieuw = huidig - hoeveel;
@@ -660,13 +648,13 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void harder(MessageEvent event, String[] parameters) {
+	private void harder(MessageEvent event, Command command) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
 			int hoeveel = 10;
-			if (parameters.length == 1) {
-				hoeveel = Integer.parseInt(parameters[0]);
+			if (command.getNumberOfArguments() == 1) {
+				hoeveel = Integer.parseInt(command.getArgs()[0]);
 			}
 			int huidig = mpdPlayer.getVolume();
 			int nieuw = huidig + hoeveel;
@@ -688,12 +676,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void volume(MessageEvent event, String[] parameters) {
+	private void volume(MessageEvent event, Command command) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			if (parameters.length == 1) {
-				int volume = Integer.parseInt(parameters[0]);
+			if (command.getNumberOfArguments() == 1) {
+				int volume = Integer.parseInt(command.getArgs()[0]);
 				if (volume > 100) {
 					volume = 100;
 				} else if (volume < 0) {
@@ -718,7 +706,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void mpdPause(MessageEvent event, String[] parameters) {
+	private void mpdPause(MessageEvent event) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
@@ -737,7 +725,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void mpdStop(MessageEvent event, String[] parameters) {
+	private void mpdStop(MessageEvent event) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
@@ -756,7 +744,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void mpdPlay(MessageEvent event, String[] parameters) {
+	private void mpdPlay(MessageEvent event) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
@@ -775,7 +763,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		}
 	}
 
-	private void showSong(MessageEvent event, String[] parameters) {
+	private void showSong(MessageEvent event) {
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
@@ -812,26 +800,14 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		return songInfo.toString();
 	}
 	
-	private void wall(MessageEvent event, String[] parameters) {
-		String text = combine(" ", parameters);
+	private void wall(MessageEvent event, Command command) {
+		String text = command.getArgumentString();
 		if (text != null && serial != null) {
 			String nick = event.getUser().getNick();
-			serial.sendToLedPanel(nick.toUpperCase() + "-" + text.toUpperCase());
+			serial.sendToLedPanel(nick.toUpperCase() + "-" + text.toUpperCase() + " - ");
 		}
 	}
 	
-	private String combine(String glue, String... values) {
-		int length = values.length;
-		if (length == 0) {
-			return null;
-		}
-		StringBuilder out = new StringBuilder();
-		out.append(values[0]);
-		for (int x = 1; x < length; ++x)
-			out.append(glue).append(values[x]);
-		return out.toString();
-	}
-
 	@Override
 	public void spaceStatusChanged(int eventType, Object status) {
 		LOG.trace("spaceStatusChanged: " + eventType);
