@@ -261,6 +261,10 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.playlist(event);
 		} else if ("next".equalsIgnoreCase(command.getCommand())) {
 			this.skipTrack(event, false);
+		} else if ("previous".equalsIgnoreCase(command.getCommand())) {
+			this.prevTrack(event, false);
+		} else if ("prachtmuziek".equalsIgnoreCase(command.getCommand())) {
+			this.prevTrack(event, true);
 		} else if ("volume".equalsIgnoreCase(command.getCommand())) {
 			this.volume(event, command);
 		} else if ("louder".equalsIgnoreCase(command.getCommand()) || "harder".equalsIgnoreCase(command.getCommand())) {
@@ -617,6 +621,42 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		} catch (UnknownHostException e) {
 			event.respond("sorry, couldn't find the MPD host");
 			LOG.error("skipTrack: Error connecting", e);
+		}
+	}
+
+	private void prevTrack(MessageEvent event, boolean prachtmuziek) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			mpdPlayer.playPrev();
+			StringBuilder songInfoString = null;
+			if (prachtmuziek) {
+				MPDSong song = mpdPlayer.getCurrentSong();
+				songInfoString = new StringBuilder();
+				if (song.getArtist() == null) {
+					songInfoString.append(song.getTitle()).append(" van ")
+							.append(song.getFile());
+				} else {
+					songInfoString.append(song.getTitle()).append(" van ")
+							.append(song.getArtist());
+				}
+			}
+			mpd.close();
+			if (prachtmuziek) {
+				String message = String.format("%1$s is voor echte helden zoals %1$s", songInfoString.toString(), event.getUser().getNick());
+				event.getBot().sendMessage(event.getChannel(), message);
+			}
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't play previous song");
+			LOG.error("prevTrack: Error skipping", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("prevTrack: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("prevTrack: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("prevTrack: Error connecting", e);
 		}
 	}
 
