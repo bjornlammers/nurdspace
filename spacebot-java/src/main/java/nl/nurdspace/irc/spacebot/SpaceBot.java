@@ -79,7 +79,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 	private List<DimmerDevice> dimmerDevices;
 
 	private static final Pattern REPLACE_COMMAND = Pattern
-			.compile("(^s|[ #!]s)/[^/]+/[^/]+/?"); // ^s/.+/.+|[
+			.compile("(^s|[ #!]s)/[^/]+/[^/]*/?"); // ^s/.+/.+|[
 													// |\\!|\\#]s/.+/.+
 
 	private List<Event> events = new ArrayList<Event>(100);
