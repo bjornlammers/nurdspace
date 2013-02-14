@@ -931,8 +931,12 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			LOG.debug("process: replace command: " + replaceCommand);
 			String[] commandElements = replaceCommand.split("/");
 			String snippet = commandElements[1];
-			String replacement = commandElements[2];
-			String origin;
+			String replacement;
+			if (commandElements.length > 2) {
+				replacement = commandElements[2];
+			} else {
+				replacement = "";
+			}
 
 			List<Event> reversedMessages = new ArrayList<Event>(100);
 			reversedMessages.addAll(events);
