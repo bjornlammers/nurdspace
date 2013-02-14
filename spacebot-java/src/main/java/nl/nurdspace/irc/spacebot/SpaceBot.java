@@ -219,6 +219,10 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.fade(event, command);
 		} else if ("speak".equalsIgnoreCase(command.getCommand()) || "wall".equalsIgnoreCase(command.getCommand())) {
 			this.wall(event, command);
+		} else if ("badum".equalsIgnoreCase(command.getCommand())) {
+			this.rimshot(event);
+		} else if ("nps".equalsIgnoreCase(command.getCommand())) {
+			this.speakSong(event);
 		} else if ("devices".equalsIgnoreCase(command.getCommand())) {
 			StringBuffer devices = new StringBuffer();
 			for (int i = 0; i < this.dimmerDevices.size(); i++) {
@@ -822,6 +826,31 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			event.respond("sorry, couldn't find the MPD host");
 			LOG.error("showSong: Error connecting", e);
 		}
+	}
+	
+	private void speakSong(MessageEvent event) {
+		try {
+			MPD mpd = new MPD(this.mpdHost, 6600);
+			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
+			MPDSong song = mpdPlayer.getCurrentSong();
+			event.getBot().sendMessage(event.getChannel(), "!speak now playing " + getSongInfo(song));
+			mpd.close();
+		} catch (MPDPlayerException e) {
+			event.respond("sorry, couldn't show the song");
+			LOG.error("showSong: Error reading current song", e);
+		} catch (MPDConnectionException e) {
+			event.respond("sorry, couldn't connect to MPD");
+			LOG.error("showSong: Error connecting", e);
+		} catch (MPDResponseException e) {
+			LOG.error("showSong: Error connecting", e);
+		} catch (UnknownHostException e) {
+			event.respond("sorry, couldn't find the MPD host");
+			LOG.error("showSong: Error connecting", e);
+		}
+	}
+	
+	private void rimshot(MessageEvent event) {
+		event.getBot().sendMessage(event.getChannel(), "*tsssssssh!*");
 	}
 	
 	private String getSongInfo(MPDSong song) {
