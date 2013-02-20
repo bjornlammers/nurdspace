@@ -265,7 +265,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			this.playlist(event);
 		} else if ("next".equalsIgnoreCase(command.getCommand())) {
 			this.skipTrack(event, false);
-		} else if ("previous".equalsIgnoreCase(command.getCommand())) {
+		} else if ("previous".equalsIgnoreCase(command.getCommand()) || "prev".equalsIgnoreCase(command.getCommand())) {
 			this.prevTrack(event, false);
 		} else if ("prachtmuziek".equalsIgnoreCase(command.getCommand())) {
 			this.prevTrack(event, true);
@@ -647,7 +647,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 			}
 			mpd.close();
 			if (prachtmuziek) {
-				String message = String.format("%1$s is voor echte helden zoals %1$s", songInfoString.toString(), event.getUser().getNick());
+				String message = String.format("%1$s is voor echte helden zoals %2$s", songInfoString.toString(), event.getUser().getNick());
 				event.getBot().sendMessage(event.getChannel(), message);
 			}
 		} catch (MPDPlayerException e) {
@@ -811,8 +811,7 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			MPDSong song = mpdPlayer.getCurrentSong();
-			event.getBot().sendMessage(event.getChannel(), "np: " + getSongInfo(song));
+			event.getBot().sendMessage(event.getChannel(), "np: " + getSongInfo(mpdPlayer));
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
@@ -832,8 +831,9 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		try {
 			MPD mpd = new MPD(this.mpdHost, 6600);
 			MPDPlayer mpdPlayer = mpd.getMPDPlayer();
-			MPDSong song = mpdPlayer.getCurrentSong();
-			event.getBot().sendMessage(event.getChannel(), "!speak now playing " + getSongInfo(song));
+			String songInfo = getSongInfo(mpdPlayer, false);
+			wall("NP " + songInfo);
+			event.getBot().sendMessage(event.getChannel(), "!speak now playing " + songInfo);
 			mpd.close();
 		} catch (MPDPlayerException e) {
 			event.respond("sorry, couldn't show the song");
@@ -853,27 +853,76 @@ public class SpaceBot extends ListenerAdapter implements Listener,
 		event.getBot().sendMessage(event.getChannel(), "*tsssssssh!*");
 	}
 	
+	private String getSongInfo(MPDPlayer player) throws MPDPlayerException, MPDConnectionException {
+		return getSongInfo(player, true);
+	}
+	
 	private String getSongInfo(MPDSong song) {
+		return getSongInfo(song, 0, false);
+	}
+	
+	private String getSongInfo(MPDPlayer player, boolean metTijd) throws MPDPlayerException, MPDConnectionException {
+		StringBuilder songInfo = new StringBuilder();
+		MPDSong song = player.getCurrentSong();
+		if (song.getArtist() == null) {
+			songInfo.append(song.getFile()).append(" - ")
+					.append(song.getTitle());
+			if (metTijd) {
+				long pos = player.getElapsedTime();
+				songInfo.append(" [").append(pos / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(pos % 60))
+						.append("]");
+			}
+		} else {
+			songInfo.append(song.getArtist()).append(" - ")
+					.append(song.getTitle());
+			if (metTijd) {
+				int time = song.getLength();
+				long pos = player.getElapsedTime();
+				songInfo.append(" [").append(pos / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(pos % 60));
+				songInfo.append("/").append(time / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(time % 60))
+						.append("]");
+			}
+		}
+		return songInfo.toString();
+	}
+	
+	private String getSongInfo(MPDSong song, long pos, boolean metTijd) {
 		StringBuilder songInfo = new StringBuilder();
 		if (song.getArtist() == null) {
 			songInfo.append(song.getFile()).append(" - ")
 					.append(song.getTitle());
+			if (metTijd) {
+				songInfo.append(" [").append(pos / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(pos % 60))
+						.append("]");
+			}
 		} else {
 			songInfo.append(song.getArtist()).append(" - ")
 					.append(song.getTitle());
-			int time = song.getLength();
-			songInfo.append(" [").append(time / 60).append(":");
-			songInfo.append(SECONDS_FORMAT.format(time % 60))
-					.append("]");
+			if (metTijd) {
+				int time = song.getLength();
+				songInfo.append(" [").append(pos / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(pos % 60));
+				songInfo.append("/").append(time / 60).append(":");
+				songInfo.append(SECONDS_FORMAT.format(time % 60))
+						.append("]");
+			}
 		}
 		return songInfo.toString();
 	}
 	
 	private void wall(MessageEvent event, Command command) {
 		String text = command.getArgumentString();
+		String nick = event.getUser().getNick();
+		wall(nick.toUpperCase() + "-" + text.toUpperCase() + " - ");
+	}
+	
+	private void wall(String text) {
 		if (text != null && serial != null) {
-			String nick = event.getUser().getNick();
-			serial.sendToLedPanel(nick.toUpperCase() + "-" + text.toUpperCase() + " - ");
+			serial.sendToLedPanel(text.toUpperCase());
 		}
 	}
 	
