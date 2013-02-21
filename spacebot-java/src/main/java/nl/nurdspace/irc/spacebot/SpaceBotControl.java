@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpServer;
+import java.nio.charset.Charset;
 
 /**
  * Control class for spacebot. Assembles the parts and starts the bot.
@@ -55,7 +56,9 @@ public class SpaceBotControl {
 		// Create a new bot
 		PircBotX bot = new PircBotX();
 		
-		// Configurable settings
+	    bot.setEncoding(Charset.forName("UTF-8")); // Or other suitable character set
+	    
+	    // Configurable settings
 		Map settings = createInitialSettings();
 		
 		// Setup http server
