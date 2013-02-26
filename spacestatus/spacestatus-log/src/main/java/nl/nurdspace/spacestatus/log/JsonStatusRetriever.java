@@ -5,7 +5,9 @@ import static org.rrd4j.ConsolFun.MAX;
 import static org.rrd4j.ConsolFun.MIN;
 
 import java.awt.Color;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -39,6 +41,7 @@ import org.rrd4j.graph.RrdGraphDef;
 @LocalBean
 public class JsonStatusRetriever {
     private static final String RRD_PATH = "/home/spacebot/rrd/status.rrd";
+    private static final String JSON_PATH = "/home/spacebot/webdir/spaceapi/status.json";
 
 	private static final Logger LOG = Logger.getLogger(JsonStatusRetriever.class);
 
@@ -53,13 +56,14 @@ public class JsonStatusRetriever {
     	rrdDef = createRrdDef();
     }
     
-    @Schedule(hour = "*", minute = "*", second = "0", persistent = false)
+    @Schedule(hour = "*", minute = "*", second = "0,10,20,30,40,50", persistent = false)
     public void removeOldReports() {
     	String json = getRemoteStatus();
     	if (json == null) {
     		LOG.warn("status kon niet opgehaald worden");
     	} else {
     		LOG.debug("json: " + json);
+    		saveSpaceApi(json);
     		try {
         		JSONParser parser = new JSONParser();
         		JSONObject status = (JSONObject) parser.parse(json);
@@ -350,5 +354,26 @@ public class JsonStatusRetriever {
 		rrdDef.addArchive(MIN, 0.5, 24, 775);
 		rrdDef.addArchive(MIN, 0.5, 288, 797);
 		return rrdDef;
+    }
+    
+    private void saveSpaceApi(final String json) {
+    	File jsonFile = new File(JSON_PATH);
+		BufferedWriter writer = null;
+		try {
+			writer = new BufferedWriter(new FileWriter(jsonFile, false));
+			writer.write(json + "\n");
+			writer.flush();
+			LOG.info("saveSpaceApi: succesfully updated JSON");
+		} catch (IOException ioe) {
+			LOG.error("saveSpaceApi: error while writing status file", ioe);
+		} finally {
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException ioe) {
+					LOG.error("saveSpaceApi: error while closing writer", ioe);
+				}
+			}
+		}
     }
 }

@@ -224,6 +224,10 @@ public class SpaceStatus {
 		contact.put("ml", "nurds@nurdspace.nl");
 		
 		obj.put("contact", contact);
+		JSONArray cams = new JSONArray();
+		cams.add("http://space.nurdspace.nl/video/channel_0.gif");
+		// cams.add("http://space.nurdspace.nl/video/channel_1.gif");
+		obj.put("cam", cams);
 		obj.put("lat", 51.9643786f);
 		obj.put("lon", 5.6571056f);
 		obj.put("open", this.isOpen() != null && this.isOpen());
