@@ -208,11 +208,11 @@ public class SpaceStatus {
 		JSONObject obj = new JSONObject();
 		obj.put("api", "0.12");
 		obj.put("space", "NURDSpace");
-		obj.put("logo", "http://nurdspace.tk/spaceapi/logo.png");
+		obj.put("logo", "http://space.nurdspace.nl/spaceapi/logo.png");
 	 
 		JSONObject icons = new JSONObject();
-		icons.put("open", "http://nurdspace.tk/spaceapi/icon-open.png");
-		icons.put("closed", "http://nurdspace.tk/spaceapi/icon-closed.png");
+		icons.put("open", "http://space.nurdspace.nl/spaceapi/icon-open.png");
+		icons.put("closed", "http://space.nurdspace.nl/spaceapi/icon-closed.png");
 
 		obj.put("icon", icons);
 		obj.put("url", "http://nurdspace.nl/");
