@@ -13,21 +13,19 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+import javax.annotation.PostConstruct;
+import javax.ejb.ConcurrencyManagement;
+import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.LocalBean;
 import javax.ejb.Schedule;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.log4j.Logger;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
@@ -38,72 +36,111 @@ import org.rrd4j.graph.RrdGraphDef;
 
 @Startup
 @Singleton
+@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @LocalBean
 public class JsonStatusRetriever {
-    private static final String RRD_PATH = "/home/spacebot/rrd/status.rrd";
+    private static final String RRD_PATH = "/Users/bjolamme/status.rrd";
     private static final String JSON_PATH = "/home/spacebot/webdir/spaceapi/status.json";
 
 	private static final Logger LOG = Logger.getLogger(JsonStatusRetriever.class);
 
-    private final HttpClient client;
-    private final RrdDef rrdDef;
+    private HttpClient client;
+    private RrdDef rrdDef;
     
-    public JsonStatusRetriever() {
+    @PostConstruct
+    public void init() {
+    	LOG.info("init");
 		client = new HttpClient();
 		HttpClientParams params = new HttpClientParams();
 		params.setSoTimeout(1000);
     	client.setParams(params);
     	rrdDef = createRrdDef();
+    	checkRrdFile();
     }
     
     @Schedule(hour = "*", minute = "*", second = "0,10,20,30,40,50", persistent = false)
     public void removeOldReports() {
-    	String json = getRemoteStatus();
-    	if (json == null) {
+    	LOG.debug("Getting stuff...");
+    	Document nurdspace = getRemoteStatus();
+    	if (nurdspace == null) {
     		LOG.warn("status kon niet opgehaald worden");
     	} else {
-    		LOG.debug("json: " + json);
-    		saveSpaceApi(json);
+        	NurdspaceSiteParser parser = new NurdspaceSiteParser(nurdspace);
+    		// saveSpaceApi(json);
     		try {
-        		JSONParser parser = new JSONParser();
-        		JSONObject status = (JSONObject) parser.parse(json);
-        		Boolean open = (Boolean) status.get("open");
-        		JSONArray sensors = (JSONArray) status.get("sensors");
-        		String temp = null;
-        		for (Object sensorObject : sensors) {
-					JSONObject sensorJson = (JSONObject) sensorObject;
-					JSONObject tempObject = (JSONObject) sensorJson.get("temp");
-					temp = (String) tempObject.get("space");
+    			if (!new File(RRD_PATH).exists()) {
+    				RrdDb rrd = new RrdDb(rrdDef);
+    				LOG.info("RRD file opnieuw aangemaakt");
+    				rrd.close();
+    			}
+				RrdDb rrdDb = new RrdDb(RRD_PATH);
+				Sample sample = rrdDb.createSample();
+				long timestamp = Util.getTimestamp(new Date());
+				LOG.info("timestamp: " + timestamp);
+				sample.setTime(timestamp);
+				Float temp = parser.getTemperatuur();
+				if (temp != null) {
+					sample.setValue("temperature", temp);
 				}
-        		LOG.info("space: " + (Boolean.TRUE.equals(open) ? "open" : "closed") + ", temperature: " + temp);
-        		try {
-        			if (!new File(RRD_PATH).exists()) {
-        				RrdDb rrd = new RrdDb(rrdDef);
-        				LOG.info("RRD file opnieuw aangemaakt");
-        				rrd.close();
-        			}
-					RrdDb rrdDb = new RrdDb(RRD_PATH);
-					Sample sample = rrdDb.createSample();
-					long timestamp = Util.getTimestamp(new Date());
-					LOG.info("timestamp: " + timestamp);
-					sample.setTime(timestamp);
-					if (temp != null) {
-						String tempValue = temp.substring(0, temp.length() - 1);
-						sample.setValue("temperature", Double.parseDouble(tempValue));
-					}
-					sample.setValue("open", Boolean.TRUE.equals(open) ? 1 : 0);
+				sample.setValue("open", parser.isOpen() ? 1 : 0);
 //					sample.setValue("lightlevel", lightSource.getValue()/ 10);
-					sample.update();
-					rrdDb.close();
-				} catch (IOException e) {
-					LOG.error("waarden kunnen niet naar rrdDb geschreven worden");
-					e.printStackTrace();
-				}
-    		} catch (ParseException e) {
-    			LOG.error("error parsing json string", e);
-    		}
+				sample.update();
+				rrdDb.close();
+			} catch (IOException e) {
+				LOG.error("waarden kunnen niet naar rrdDb geschreven worden");
+				e.printStackTrace();
+			}
     	}
     }
+    
+//    @Schedule(hour = "*", minute = "*", second = "0,10,20,30,40,50", persistent = false)
+//    public void removeOldReports() {
+//    	String json = getRemoteStatus();
+//    	if (json == null) {
+//    		LOG.warn("status kon niet opgehaald worden");
+//    	} else {
+//    		LOG.debug("json: " + json);
+//    		saveSpaceApi(json);
+//    		try {
+//        		JSONParser parser = new JSONParser();
+//        		JSONObject status = (JSONObject) parser.parse(json);
+//        		Boolean open = (Boolean) status.get("open");
+//        		JSONArray sensors = (JSONArray) status.get("sensors");
+//        		String temp = null;
+//        		for (Object sensorObject : sensors) {
+//					JSONObject sensorJson = (JSONObject) sensorObject;
+//					JSONObject tempObject = (JSONObject) sensorJson.get("temp");
+//					temp = (String) tempObject.get("space");
+//				}
+//        		LOG.info("space: " + (Boolean.TRUE.equals(open) ? "open" : "closed") + ", temperature: " + temp);
+//        		try {
+//        			if (!new File(RRD_PATH).exists()) {
+//        				RrdDb rrd = new RrdDb(rrdDef);
+//        				LOG.info("RRD file opnieuw aangemaakt");
+//        				rrd.close();
+//        			}
+//					RrdDb rrdDb = new RrdDb(RRD_PATH);
+//					Sample sample = rrdDb.createSample();
+//					long timestamp = Util.getTimestamp(new Date());
+//					LOG.info("timestamp: " + timestamp);
+//					sample.setTime(timestamp);
+//					if (temp != null) {
+//						String tempValue = temp.substring(0, temp.length() - 1);
+//						sample.setValue("temperature", Double.parseDouble(tempValue));
+//					}
+//					sample.setValue("open", Boolean.TRUE.equals(open) ? 1 : 0);
+////					sample.setValue("lightlevel", lightSource.getValue()/ 10);
+//					sample.update();
+//					rrdDb.close();
+//				} catch (IOException e) {
+//					LOG.error("waarden kunnen niet naar rrdDb geschreven worden");
+//					e.printStackTrace();
+//				}
+//    		} catch (ParseException e) {
+//    			LOG.error("error parsing json string", e);
+//    		}
+//    	}
+//    }
     
 //    @Schedule(hour = "*", minute = "0,5,10,15,20,25,30,35,40,45,50,55", second = "15")
     @Schedule(hour = "*", minute = "*", second = "15", persistent = false)
@@ -111,7 +148,7 @@ public class JsonStatusRetriever {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/webdir/hourly-temp.png");
+		gDef.setFilename("/Users/bjolamme/hourly-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneHourEarlier = new GregorianCalendar();
 		oneHourEarlier.add(Calendar.HOUR, -1);
@@ -138,7 +175,7 @@ public class JsonStatusRetriever {
 		gDef = new RrdGraphDef();
 		gDef.setWidth(160);
 		gDef.setHeight(96);
-		gDef.setFilename("/home/spacebot/webdir/hourly-temp-small.png");
+		gDef.setFilename("/Users/bjolamme/hourly-temp-small.png");
 		gDef.setStartTime(Util.getTimestamp(oneHourEarlier));
 		gDef.setEndTime(Util.getTimestamp(now));
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
@@ -164,7 +201,7 @@ public class JsonStatusRetriever {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/webdir/daily-temp.png");
+		gDef.setFilename("/Users/bjolamme/daily-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneDayEarlier = new GregorianCalendar();
 		oneDayEarlier.add(Calendar.DAY_OF_YEAR, -1);
@@ -192,7 +229,7 @@ public class JsonStatusRetriever {
 		gDef = new RrdGraphDef();
 		gDef.setWidth(160);
 		gDef.setHeight(96);
-		gDef.setFilename("/home/spacebot/webdir/daily-temp-small.png");
+		gDef.setFilename("/Users/bjolamme/daily-temp-small.png");
 		gDef.setStartTime(Util.getTimestamp(oneDayEarlier));
 		gDef.setEndTime(Util.getTimestamp(now));
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
@@ -218,7 +255,7 @@ public class JsonStatusRetriever {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/webdir/weekly-temp.png");
+		gDef.setFilename("/Users/bjolamme/weekly-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneWeekEarlier = new GregorianCalendar();
 		oneWeekEarlier.add(Calendar.DAY_OF_YEAR, -7);
@@ -245,7 +282,7 @@ public class JsonStatusRetriever {
 		gDef = new RrdGraphDef();
 		gDef.setWidth(160);
 		gDef.setHeight(96);
-		gDef.setFilename("/home/spacebot/webdir/weekly-temp-small.png");
+		gDef.setFilename("/Users/bjolamme/weekly-temp-small.png");
 		gDef.setStartTime(Util.getTimestamp(oneWeekEarlier));
 		gDef.setEndTime(Util.getTimestamp(now));
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
@@ -272,7 +309,7 @@ public class JsonStatusRetriever {
 		RrdGraphDef gDef = new RrdGraphDef();
 		gDef.setWidth(800);
 		gDef.setHeight(600);
-		gDef.setFilename("/home/spacebot/webdir/monthly-temp.png");
+		gDef.setFilename("/Users/bjolamme/monthly-temp.png");
 		Calendar now = new GregorianCalendar();
 		Calendar oneMonthEarlier = new GregorianCalendar();
 		oneMonthEarlier.add(Calendar.MONTH, -1);
@@ -299,7 +336,7 @@ public class JsonStatusRetriever {
 		gDef = new RrdGraphDef();
 		gDef.setWidth(160);
 		gDef.setHeight(96);
-		gDef.setFilename("/home/spacebot/webdir/monthly-temp-small.png");
+		gDef.setFilename("/Users/bjolamme/monthly-temp-small.png");
 		gDef.setStartTime(Util.getTimestamp(oneMonthEarlier));
 		gDef.setEndTime(Util.getTimestamp(now));
 		gDef.datasource("temperature", RRD_PATH, "temperature", AVERAGE);
@@ -320,19 +357,16 @@ public class JsonStatusRetriever {
 		}
     }
     
-    private String getRemoteStatus() {
-		HttpMethod method = new GetMethod("http://dockstar:8000/status");
-		String response = null;
+    private Document getRemoteStatus() {
+    	Document doc;
 		try {
-			client.executeMethod(method);
-			response = new String(method.getResponseBody());
-			method.releaseConnection();
-		} catch (HttpException e) {
-			LOG.error("fout bij ophalen remote status");
+			doc = Jsoup.connect("http://space.nurdspace.nl/buzz_index.php").get();
 		} catch (IOException e) {
-			LOG.error("fout bij ophalen remote status");
+			// TODO Auto-generated catch block
+			LOG.error("Kon nurdspace HTML niet ophalen", e);
+			doc = null;
 		}
-		return response;
+		return doc;
     }
     
     private RrdDef createRrdDef() {
@@ -375,5 +409,24 @@ public class JsonStatusRetriever {
 				}
 			}
 		}
+    }
+    
+    private void checkRrdFile() {
+    	File rrdFile = new File(rrdDef.getPath());
+    	LOG.debug("checkRrdFile: " + rrdFile.getAbsolutePath());
+    	if (rrdFile.exists()) {
+    		LOG.info("RRD file exists");
+    		
+    		// TODO check validity
+    	} else {
+    		LOG.warn("RRD file does not exist");
+    		try {
+    			RrdDb db = new RrdDb(rrdDef);
+    			db.close();
+    		} catch (IOException e) {
+    			LOG.fatal("Unable to create RRD file " + rrdFile.getAbsolutePath(), e);
+    			throw new IllegalStateException("RRD file could not be created");
+    		}
+    	}
     }
 }

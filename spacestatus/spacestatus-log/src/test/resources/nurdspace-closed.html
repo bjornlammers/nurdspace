@@ -1,0 +1,52 @@
+
+<html><head>
+
+<title>NURDspace Wageningen is CLOSED</title>
+
+<script type="text/javascript">
+var graphIndex = 0;
+var graphs = new Array();
+graphs[0] = 'hourly-temp-small.png';
+graphs[1] = 'daily-temp-small.png';
+graphs[2] = 'weekly-temp-small.png';
+graphs[3] = 'monthly-temp-small.png';
+window.setInterval(function(){nextgraph()}, 3000);
+
+function nextgraph() {
+    graphIndex = graphIndex + 1;
+    if (graphIndex > 3) {
+        graphIndex = 0;
+    }
+
+    var x = document.images;
+    x[2].src = graphs[graphIndex];
+}
+</script>
+
+<link rel="stylesheet" href="http://nurdspace.nl/skins/gumax/gumax_main.css" media="screen" />
+<link rel="stylesheet" href="nurdspace_tk_1.css" />
+
+</head><body>
+<base target="_parent" />
+<div id="wrapper">
+	<img id="statusplaatje" src="spaceapi/icon-CLOSED.png" alt="Space is CLOSED"/>
+
+	<div id="statusblokje">
+		<p>
+		<b>Space status</b><br />
+		CLOSED<br />
+		26.0C<br />
+		KOFFIE: LEKKOR<br />
+		</p>
+	</div>
+	<div id="cam0">
+		<img id="cam0gif" src="video/channel_0.gif"/ alt="channel 0 live">
+	</div>
+        <div id="temp">
+ 		<a href="graphs.php"><img id="temppng" src="hourly-temp-small.png"/ alt="temperatuur laatste dag"></a>
+	</div>
+</div>
+
+</body>
+</html>
+
